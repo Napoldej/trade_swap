@@ -1,0 +1,185 @@
+// This is your Prisma schema file,
+// learn more about it in the docs: https://pris.ly/d/prisma-schema
+
+// Looking for ways to speed up your queries, or scale easily with your serverless or edge functions?
+// Try Prisma Accelerate: https://pris.ly/cli/accelerate-init
+
+generator client {
+  provider = "prisma-client"
+  output   = "../generated/prisma"
+}
+
+datasource db {
+  provider = "postgresql"
+}
+
+
+model User {
+  user_id       Int      @id @default(autoincrement())
+  user_name     String   @unique
+  password_hash String
+  role          Role     @default(TRADER)
+  created_at    DateTime @default(now())
+  updated_at    DateTime @updatedAt
+  verified      Boolean  @default(false)
+
+  trader         Trader?
+  verified_items TraderItem[] @relation("VerifiedBy")
+
+  @@map("users")
+}
+
+enum Role {
+  TRADER
+  VERIFIER
+  ADMIN
+}
+
+
+model Trader {
+  trader_id    Int    @id @default(autoincrement())
+  user_id      Int    @unique
+  first_name   String
+  last_name    String
+  rating       Float  @default(0)
+  total_trades Int    @default(0)
+
+  user User @relation(fields: [user_id], references: [user_id], onDelete: Cascade)
+
+  items            TraderItem[]
+  proposed_trades  Trade[]  @relation("ProposerTrades")
+  received_trades  Trade[]  @relation("ReceiverTrades")
+  sent_messages    Message[]
+  ratings_given    Rating[] @relation("RaterRatings")
+  ratings_received Rating[] @relation("RateeRatings")
+
+  @@map("traders")
+}
+
+
+model Category {
+  category_id   Int    @id @default(autoincrement())
+  category_name String @unique
+
+  items TraderItem[]
+
+  @@map("categories")
+}
+
+
+model TraderItem {
+  item_id          Int        @id @default(autoincrement())
+  trader_id        Int
+  category_id      Int
+  item_name        String
+  description      String
+  is_available     Boolean    @default(true)
+  status           ItemStatus @default(PENDING)
+  verified_by      Int?
+  rejection_reason String?
+  created_at       DateTime   @default(now())
+  updated_at       DateTime   @updatedAt
+
+  trader   Trader   @relation(fields: [trader_id], references: [trader_id], onDelete: Cascade)
+  category Category @relation(fields: [category_id], references: [category_id])
+  verifier User?    @relation("VerifiedBy", fields: [verified_by], references: [user_id])
+
+  photos      ItemPhoto[]
+  proposed_in Trade[]     @relation("ProposerItem")
+  received_in Trade[]     @relation("ReceiverItem")
+
+  @@map("trader_items")
+}
+
+
+model ItemPhoto {
+  photo_id      Int      @id @default(autoincrement())
+  item_id       Int
+  photo_url     String
+  display_order Int      @default(0)
+  created_at    DateTime @default(now())
+
+  item TraderItem @relation(fields: [item_id], references: [item_id], onDelete: Cascade)
+
+  @@map("item_photos")
+}
+
+
+model Trade {
+  trade_id         Int         @id @default(autoincrement())
+  proposer_id      Int
+  proposer_item_id Int
+  receiver_id      Int
+  receiver_item_id Int
+  status           TradeStatus @default(PENDING)
+  created_at       DateTime    @default(now())
+  updated_at       DateTime    @updatedAt
+  completed_at     DateTime?
+
+  proposer      Trader     @relation("ProposerTrades", fields: [proposer_id], references: [trader_id])
+  receiver      Trader     @relation("ReceiverTrades", fields: [receiver_id], references: [trader_id])
+  proposer_item TraderItem @relation("ProposerItem", fields: [proposer_item_id], references: [item_id])
+  receiver_item TraderItem @relation("ReceiverItem", fields: [receiver_item_id], references: [item_id])
+
+  conversation Conversation?
+  ratings      Rating[]
+
+  @@map("trades")
+}
+
+enum TradeStatus {
+  PENDING
+  ACCEPTED
+  REJECTED
+  COMPLETED
+  CANCELLED
+}
+
+
+model Rating {
+  rating_id  Int      @id @default(autoincrement())
+  trade_id   Int
+  rater_id   Int
+  ratee_id   Int
+  score      Int
+  comment    String?
+  created_at DateTime @default(now())
+
+  trade Trade  @relation(fields: [trade_id], references: [trade_id], onDelete: Cascade)
+  rater Trader @relation("RaterRatings", fields: [rater_id], references: [trader_id])
+  ratee Trader @relation("RateeRatings", fields: [ratee_id], references: [trader_id])
+
+  @@unique([trade_id, rater_id])
+  @@map("ratings")
+}
+
+
+model Conversation {
+  conversation_id Int @id @default(autoincrement())
+  trade_id        Int @unique
+
+  trade    Trade     @relation(fields: [trade_id], references: [trade_id], onDelete: Cascade)
+  messages Message[]
+
+  @@map("conversations")
+}
+
+
+model Message {
+  message_id      Int      @id @default(autoincrement())
+  conversation_id Int
+  sender_id       Int
+  content         String
+  created_at      DateTime @default(now())
+
+  conversation Conversation @relation(fields: [conversation_id], references: [conversation_id], onDelete: Cascade)
+  sender       Trader       @relation(fields: [sender_id], references: [trader_id])
+
+  @@map("messages")
+}
+
+enum ItemStatus {
+  PENDING
+  APPROVED
+  REJECTED
+}
