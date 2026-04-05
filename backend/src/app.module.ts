@@ -8,6 +8,8 @@ import { ChatModule } from './chat/chat.module';
 import { RatingModule } from './rating/rating.module';
 import { VerifierModule } from './verifier/verifier.module';
 import { AdminModule } from './admin/admin.module';
+import { AppController } from './app.controller';
+import { AppService } from './app.service';
 
 @Module({
   imports: [
@@ -21,7 +23,7 @@ import { AdminModule } from './admin/admin.module';
     VerifierModule,
     AdminModule,
   ],
-  controllers: [],
-  providers: [],
+  controllers: [AppController],
+  providers: [AppService],
 })
 export class AppModule {}
