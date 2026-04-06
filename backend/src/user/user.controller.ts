@@ -23,7 +23,7 @@ import { plainToInstance } from 'class-transformer';
 
 @Controller('users')
 @UseGuards(AuthGuard, RolesGuard)
-@Roles('TRADER', 'ADMIN')
+@Roles('TRADER', 'VERIFIER', 'ADMIN')
 export class UserController {
   constructor(private readonly userService: UserService) {}
 
