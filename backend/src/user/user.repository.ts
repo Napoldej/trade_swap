@@ -8,7 +8,7 @@ export class UserRepository {
   constructor(private db: DatabaseService) {}
 
   //Create user
-  async create(data: { user_name: string; password_hash: string; email: string, first_name: string, last_name: string}) {
+  async create(data: { user_name: string; password_hash: string; email: string; first_name: string; last_name: string; role?: 'TRADER' | 'VERIFIER'; verified?: boolean }) {
     return this.db.client.user.create({ data });
   }
 

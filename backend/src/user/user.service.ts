@@ -8,12 +8,12 @@ export class UserService {
     constructor(private userRepository: UserRepository) {}
 
     async create_user(createUserDto: CreateUserDto){
-        const { email, password, user_name, first_name, last_name } = createUserDto;
+        const { email, password, user_name, first_name, last_name, role, verified } = createUserDto;
         const existing = await this.userRepository.findByUsername(user_name);
         if (existing) {
             throw new ConflictException('Username already taken');
         }
-        return this.userRepository.create({ user_name, password_hash: password, email , first_name, last_name });
+        return this.userRepository.create({ user_name, password_hash: password, email, first_name, last_name, role, verified });
     }
 
     async get_user_by_username(username: string){
