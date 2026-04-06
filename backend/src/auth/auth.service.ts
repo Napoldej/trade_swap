@@ -61,10 +61,8 @@ export class AuthService {
     };
   }
 
-  async login(dto: LoginDto): Promise<{ access_token: string }> {
-    const user = await this.databaseService.client.user.findUnique({
-      where: { user_name: dto.username },
-    });
+  async login(dto: LoginDto): Promise<{ user_name: string, access_token: string, refresh_token: string }> {
+    const user = await this.userService.get_exist_user(dto.user_name)
 
     if (!user) {
       throw new UnauthorizedException('Invalid credentials');
@@ -86,7 +84,11 @@ export class AuthService {
     };
 
     return {
+      user_name: user.user_name,
       access_token: await this.jwtService.signAsync(payload),
+      refresh_token: await this.jwtService.signAsync(payload, {
+        expiresIn: "7d"
+      })
     };
   }
 }

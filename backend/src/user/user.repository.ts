@@ -37,4 +37,19 @@ export class UserRepository {
     }
     return false;
   }
+
+  async get_exist_user(user_name: string){
+    try{
+      const existing = await this.db.client.user.findFirst({
+        where: {
+          user_name: user_name
+        }
+      })
+      return existing;
+    }
+    catch(error){
+      console.error("Error fetching user:", error)
+      throw error;
+    }
+  }
 }

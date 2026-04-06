@@ -42,4 +42,15 @@ export class UserService {
             throw error;
         }
     }
+
+    async get_exist_user(user_name: string){
+        try{
+            const existing = await this.userRepository.get_exist_user(user_name)
+            return existing;
+        }
+        catch(error){
+            console.error("Error fetching user:", error)
+            throw error;
+        }
+    }
 }
