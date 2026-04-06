@@ -9,6 +9,7 @@ import { DatabaseService } from '../database/database.service';
 import { RegisterDto } from './dto/register.dto';
 import { LoginDto } from './dto/login.dto';
 import { UserService } from 'src/user/user.service';
+import { ref } from 'process';
 
 @Injectable()
 export class AuthService {
@@ -82,13 +83,15 @@ export class AuthService {
       username: user.user_name,
       role: user.role,
     };
+    
+    const refresh_token = await this.jwtService.signAsync(payload, {
+      expiresIn: '7d',
+    });
 
     return {
       user_name: user.user_name,
       access_token: await this.jwtService.signAsync(payload),
-      refresh_token: await this.jwtService.signAsync(payload, {
-        expiresIn: "7d"
-      })
+      refresh_token: refresh_token
     };
   }
 }

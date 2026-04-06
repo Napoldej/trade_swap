@@ -25,6 +25,18 @@ export class AuthController {
   @Post('login')
   @HttpCode(HttpStatus.OK)
   async login(@Body() dto: LoginDto) {
-    return this.authService.login(dto);
+    try {
+      const result = await this.authService.login(dto);
+      return {
+        message: 'Login successful',
+        result,
+      };
+    } catch (error) {
+      console.error('Error during login:', error);
+      throw new HttpException(
+        'Internal server error: ' + error.message,
+        HttpStatus.INTERNAL_SERVER_ERROR,
+      );
+    }
   }
 }
