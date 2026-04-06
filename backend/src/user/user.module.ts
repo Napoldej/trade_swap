@@ -6,6 +6,7 @@ import { AuthModule } from '../auth/auth.module';
 import { forwardRef } from '@nestjs/common';
 
 @Module({
+    imports: [forwardRef(() => AuthModule)],
     controllers: [UserController],
     providers: [UserService, UserRepository],
     exports: [UserService, UserRepository]

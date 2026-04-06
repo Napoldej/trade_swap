@@ -29,6 +29,8 @@ export class AuthService {
     const user = await this.userService.create_user({
       user_name: dto.user_name,
       password: passwordHash,
+      first_name: dto.first_name,
+      last_name: dto.last_name,
       email: dto.email,
     })
 
@@ -39,8 +41,6 @@ export class AuthService {
     await this.databaseService.client.trader.create({
       data: {
         user_id: user.user_id,
-        first_name: dto.first_name,
-        last_name: dto.last_name,
         rating: 0,
         total_trades: 0,
       },
@@ -83,7 +83,7 @@ export class AuthService {
       username: user.user_name,
       role: user.role,
     };
-    
+
     const refresh_token = await this.jwtService.signAsync(payload, {
       expiresIn: '7d',
     });

@@ -1,26 +1,31 @@
-import { Injectable, ConflictException } from '@nestjs/common';
+import { Injectable, ConflictException, NotFoundException } from '@nestjs/common';
 import { UserRepository } from './user.repository';
 import type { CreateUserDto } from './dto/create-user.dto';
+import { UpdateUserDto } from './dto/update-user.dto';
 
 @Injectable()
 export class UserService {
     constructor(private userRepository: UserRepository) {}
 
     async create_user(createUserDto: CreateUserDto){
-        const { email, password, user_name} = createUserDto;
+        const { email, password, user_name, first_name, last_name } = createUserDto;
         const existing = await this.userRepository.findByUsername(user_name);
         if (existing) {
             throw new ConflictException('Username already taken');
         }
-        return this.userRepository.create({ user_name, password_hash: password, email });
+        return this.userRepository.create({ user_name, password_hash: password, email , first_name, last_name });
     }
 
     async get_user_by_username(username: string){
         try{
-            const result = await this.userRepository.findByUsername(username);
-            return result;
-        }catch(error){
+            const user = await this.userRepository.findByUsername(username);
+            if (!user) {
+                throw new NotFoundException('User not found');
+            }
+            return user;
+        } catch (error) {
             console.error("Error fetching user:", error)
+            throw error;
         }
     }
 
@@ -50,6 +55,27 @@ export class UserService {
         }
         catch(error){
             console.error("Error fetching user:", error)
+            throw error;
+        }
+    }
+
+    async update_user(user_id: number, dto: UpdateUserDto){
+        try{
+            await this.userRepository.find_user_by_id(user_id);
+            const result = await this.userRepository.update(user_id, dto);
+            return result;
+        } catch (error) {
+            console.error("Error updating user:", error);
+            throw error;
+        }
+    }
+
+    async delete_user(user_id: number){
+        try{
+            await this.userRepository.find_user_by_id(user_id);
+            return await this.userRepository.delete_user(user_id);
+        } catch (error) {
+            console.error("Error deleting user:", error);
             throw error;
         }
     }

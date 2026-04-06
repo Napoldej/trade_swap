@@ -4,7 +4,6 @@ import { AuthController } from './auth.controller';
 import { AuthService } from './auth.service';
 import { AuthGuard } from './auth.guard';
 import { UserModule } from 'src/user/user.module';
-import { UserService } from 'src/user/user.service';
 import { forwardRef } from '@nestjs/common';
 
 @Module({

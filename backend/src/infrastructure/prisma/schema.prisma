@@ -17,6 +17,8 @@ datasource db {
 model User {
   user_id       Int      @id @default(autoincrement())
   user_name     String   @unique
+  first_name   String?
+  last_name    String?
   password_hash String
   email         String   @unique
   role          Role     @default(TRADER)
@@ -40,8 +42,6 @@ enum Role {
 model Trader {
   trader_id    Int    @id @default(autoincrement())
   user_id      Int    @unique
-  first_name   String
-  last_name    String
   rating       Float  @default(0)
   total_trades Int    @default(0)
 
