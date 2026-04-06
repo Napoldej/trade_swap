@@ -6,6 +6,7 @@ import { ItemModule } from './item/item.module';
 import { TradeModule } from './trade/trade.module';
 import { ChatModule } from './chat/chat.module';
 import { RatingModule } from './rating/rating.module';
+import { TraderModule } from './trader/trader.module';
 import { VerifierModule } from './verifier/verifier.module';
 import { AdminModule } from './admin/admin.module';
 import { AppController } from './app.controller';
@@ -20,6 +21,7 @@ import { AppService } from './app.service';
     TradeModule,
     ChatModule,
     RatingModule,
+    TraderModule,
     VerifierModule,
     AdminModule,
   ],
