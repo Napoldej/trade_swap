@@ -11,7 +11,6 @@ import {
 } from '@nestjs/common';
 import { UserService } from './user.service';
 import type { CreateUserDto } from './dto/create-user.dto';
-import { AuthGuard } from '../auth/auth.guard';
 
 @Controller('users')
 export class UserController {

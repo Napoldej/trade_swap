@@ -32,4 +32,14 @@ export class UserService {
             console.error("Error fetching users:", error)
         }
     }
+    async check_user_exists(user_name: string, email: string){
+        try{
+            const existing = await this.userRepository.existing_user(user_name, email)
+            return existing;
+        }
+        catch(error){
+            console.error("Error checking user existence:", error)
+            throw error;
+        }
+    }
 }
