@@ -1,12 +1,12 @@
 import { Module } from '@nestjs/common';
-import { RatingController, TraderRatingController } from './rating.controller';
+import { RatingController } from './rating.controller';
 import { RatingService } from './rating.service';
 import { RatingRepository } from './rating.repository';
 import { AuthModule } from '../auth/auth.module';
 
 @Module({
   imports: [AuthModule],
-  controllers: [RatingController, TraderRatingController],
+  controllers: [RatingController],
   providers: [RatingService, RatingRepository],
   exports: [RatingService, RatingRepository],
 })
