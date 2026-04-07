@@ -1,9 +1,22 @@
-import { Controller, Post, Body, HttpCode, HttpStatus, HttpException } from '@nestjs/common';
-import { AuthService } from './auth.service';
+import {
+  Controller,
+  Post,
+  Body,
+  Res,
+  HttpCode,
+  HttpStatus,
+} from '@nestjs/common';
+import type { Response } from 'express';
+import { AuthService, AuthResult } from './auth.service';
 import { RegisterDto } from './dto/register.dto';
 import { LoginDto } from './dto/login.dto';
-import { error } from 'console';
-import { response } from 'express';
+
+const COOKIE_OPTIONS = {
+  httpOnly: true,
+  secure: process.env.NODE_ENV === 'production',
+  sameSite: 'lax' as const,
+  path: '/',
+};
 
 @Controller('auth')
 export class AuthController {
@@ -11,32 +24,41 @@ export class AuthController {
 
   @Post('register')
   @HttpCode(HttpStatus.CREATED)
-  async register(@Body() dto: RegisterDto) {
-    try{
-      const result = this.authService.register(dto)
-      return result;
+  async register(@Body() dto: RegisterDto, @Res({ passthrough: true }) res: Response) {
+    const result = await this.authService.register(dto);
+
+    if ('access_token' in result) {
+      this.setTokenCookies(res, result);
+      return { user_id: result.user_id, user_name: result.user_name, role: result.role };
     }
-    catch(error){
-      console.error("Error during registration:", error)
-      throw new HttpException('Internal server error: ' + error.message, HttpStatus.INTERNAL_SERVER_ERROR);
-    }
+
+    // VERIFIER pending — no tokens
+    return result;
   }
 
   @Post('login')
   @HttpCode(HttpStatus.OK)
-  async login(@Body() dto: LoginDto) {
-    try {
-      const result = await this.authService.login(dto);
-      return {
-        message: 'Login successful',
-        result,
-      };
-    } catch (error) {
-      console.error('Error during login:', error);
-      throw new HttpException(
-        'Internal server error: ' + error.message,
-        HttpStatus.INTERNAL_SERVER_ERROR,
-      );
-    }
+  async login(@Body() dto: LoginDto, @Res({ passthrough: true }) res: Response) {
+    const result = await this.authService.login(dto);
+    this.setTokenCookies(res, result);
+    return { user_id: result.user_id, user_name: result.user_name, role: result.role };
+  }
+
+  @Post('logout')
+  @HttpCode(HttpStatus.NO_CONTENT)
+  logout(@Res({ passthrough: true }) res: Response) {
+    res.clearCookie('access_token', { path: '/' });
+    res.clearCookie('refresh_token', { path: '/' });
+  }
+
+  private setTokenCookies(res: Response, result: AuthResult) {
+    res.cookie('access_token', result.access_token, {
+      ...COOKIE_OPTIONS,
+      maxAge: 15 * 60 * 1000, // 15 minutes
+    });
+    res.cookie('refresh_token', result.refresh_token, {
+      ...COOKIE_OPTIONS,
+      maxAge: 7 * 24 * 60 * 60 * 1000, // 7 days
+    });
   }
 }
