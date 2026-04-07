@@ -83,4 +83,14 @@ export class RatingService {
     return rating;
   }
 
+  async getRatingsByTrader(traderId: number) {
+    const trader = await this.databaseService.client.trader.findUnique({
+      where: { trader_id: traderId },
+    });
+    if (!trader) {
+      throw new NotFoundException('Trader not found');
+    }
+    return this.ratingRepository.findByTrader(traderId);
+  }
+
 }
