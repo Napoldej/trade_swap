@@ -10,8 +10,8 @@ export class VerifierService {
     private readonly databaseService: DatabaseService,
   ) {}
 
-  async getPendingItems() {
-    return this.verifierRepository.getPendingItems();
+  async getItemsByStatus(status: 'PENDING' | 'APPROVED' | 'REJECTED') {
+    return this.verifierRepository.getItemsByStatus(status);
   }
 
   async approveItem(itemId: number, userId: number) {
@@ -43,7 +43,7 @@ export class VerifierService {
       throw new BadRequestException('Item is not in PENDING status');
     }
 
-    return this.verifierRepository.rejectItem(itemId, userId, dto.rejectionReason);
+    return this.verifierRepository.rejectItem(itemId, userId, dto.rejection_reason);
   }
 
   async removeItem(itemId: number) {

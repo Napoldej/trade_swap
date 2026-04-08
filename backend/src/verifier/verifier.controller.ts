@@ -1,7 +1,7 @@
 import {
   Controller,
   Get,
-  Put,
+  Patch,
   Delete,
   Body,
   Param,
@@ -19,22 +19,32 @@ import { Roles } from '../common/decorators/roles.decorator';
 
 @Controller('verifier')
 @UseGuards(AuthGuard, RolesGuard)
-@Roles('VERIFIER')
+@Roles('VERIFIER', 'ADMIN')
 export class VerifierController {
   constructor(private readonly verifierService: VerifierService) {}
 
-  @Get('items')
-  async getPendingItems() {
-    return this.verifierService.getPendingItems();
+  @Get('items/pending')
+  getPendingItems() {
+    return this.verifierService.getItemsByStatus('PENDING');
   }
 
-  @Put('items/:id/approve')
-  async approveItem(@Request() req: any, @Param('id', ParseIntPipe) id: number) {
+  @Get('items/approved')
+  getApprovedItems() {
+    return this.verifierService.getItemsByStatus('APPROVED');
+  }
+
+  @Get('items/rejected')
+  getRejectedItems() {
+    return this.verifierService.getItemsByStatus('REJECTED');
+  }
+
+  @Patch('items/:id/approve')
+  approveItem(@Request() req: any, @Param('id', ParseIntPipe) id: number) {
     return this.verifierService.approveItem(id, req.user.userId);
   }
 
-  @Put('items/:id/reject')
-  async rejectItem(
+  @Patch('items/:id/reject')
+  rejectItem(
     @Request() req: any,
     @Param('id', ParseIntPipe) id: number,
     @Body() dto: RejectItemDto,

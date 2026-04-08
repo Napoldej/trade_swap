@@ -26,11 +26,14 @@ export class ItemRepository {
 
   async findAll() {
     return this.databaseService.client.traderItem.findMany({
-      where: { status: 'APPROVED', is_available: true },
       include: {
         category: true,
         photos: { orderBy: { display_order: 'asc' } },
-        trader: true,
+        trader: {
+          include: {
+            user: { select: { user_name: true, first_name: true, last_name: true } },
+          },
+        },
       },
     });
   }
@@ -41,7 +44,11 @@ export class ItemRepository {
       include: {
         category: true,
         photos: { orderBy: { display_order: 'asc' } },
-        trader: true,
+        trader: {
+          include: {
+            user: { select: { user_name: true, first_name: true, last_name: true } },
+          },
+        },
       },
     });
   }

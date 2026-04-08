@@ -36,7 +36,7 @@ export class CategoryController {
   // Admin-only write operations
   @Post()
   @UseGuards(AuthGuard, RolesGuard)
-  @Roles('ADMIN')
+  @Roles('ADMIN', 'TRADER', 'VERIFIER')
   create(@Body() dto: CreateCategoryDto) {
     return this.categoryService.create(dto);
   }
