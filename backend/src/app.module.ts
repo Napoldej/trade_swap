@@ -9,6 +9,7 @@ import { RatingModule } from './rating/rating.module';
 import { TraderModule } from './trader/trader.module';
 import { VerifierModule } from './verifier/verifier.module';
 import { AdminModule } from './admin/admin.module';
+import { CategoryModule } from './category/category.module';
 import { AppController } from './app.controller';
 import { AppService } from './app.service';
 
@@ -24,6 +25,7 @@ import { AppService } from './app.service';
     TraderModule,
     VerifierModule,
     AdminModule,
+    CategoryModule,
   ],
   controllers: [AppController],
   providers: [AppService],

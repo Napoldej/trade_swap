@@ -17,6 +17,7 @@ export interface AuthResult {
   user_id: number;
   user_name: string;
   role: string;
+  trader_id: number | null;
 }
 
 @Injectable()
@@ -49,11 +50,11 @@ export class AuthService {
     }
 
     if (!isVerifier) {
-      await this.databaseService.client.trader.create({
+      const trader = await this.databaseService.client.trader.create({
         data: { user_id: user.user_id, rating: 0, total_trades: 0 },
       });
 
-      return this.buildTokens(user.user_id, user.user_name, user.role);
+      return this.buildTokens(user.user_id, user.user_name, user.role, trader.trader_id);
     }
 
     return {
@@ -77,10 +78,25 @@ export class AuthService {
       throw new ForbiddenException('Your verifier account is pending admin approval');
     }
 
-    return this.buildTokens(user.user_id, user.user_name, user.role);
+    // Look up trader_id for TRADER role
+    let trader_id: number | null = null;
+    if (user.role === 'TRADER') {
+      const trader = await this.databaseService.client.trader.findUnique({
+        where: { user_id: user.user_id },
+        select: { trader_id: true },
+      });
+      trader_id = trader?.trader_id ?? null;
+    }
+
+    return this.buildTokens(user.user_id, user.user_name, user.role, trader_id);
   }
 
-  private async buildTokens(userId: number, userName: string, role: string): Promise<AuthResult> {
+  private async buildTokens(
+    userId: number,
+    userName: string,
+    role: string,
+    trader_id: number | null,
+  ): Promise<AuthResult> {
     const payload = { sub: userId, username: userName, role };
 
     const [access_token, refresh_token] = await Promise.all([
@@ -88,6 +104,6 @@ export class AuthService {
       this.jwtService.signAsync(payload, { expiresIn: '7d' }),
     ]);
 
-    return { access_token, refresh_token, user_id: userId, user_name: userName, role };
+    return { access_token, refresh_token, user_id: userId, user_name: userName, role, trader_id };
   }
 }

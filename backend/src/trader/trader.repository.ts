@@ -5,6 +5,12 @@ import { DatabaseService } from '../database/database.service';
 export class TraderRepository {
   constructor(private readonly databaseService: DatabaseService) {}
 
+  async findByUserId(userId: number) {
+    return this.databaseService.client.trader.findUnique({
+      where: { user_id: userId },
+    });
+  }
+
   async findById(traderId: number) {
     return this.databaseService.client.trader.findUnique({
       where: { trader_id: traderId },
