@@ -1,0 +1,10 @@
+export { authService } from './auth.service';
+export { categoriesService } from './categories.service';
+export { itemsService } from './items.service';
+export { tradesService } from './trades.service';
+export { ratingsService } from './ratings.service';
+export { chatService } from './chat.service';
+export { tradersService } from './traders.service';
+export { notificationsService } from './notifications.service';
+export { verifierService } from './verifier.service';
+export { adminService } from './admin.service';
