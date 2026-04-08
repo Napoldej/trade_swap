@@ -9,7 +9,7 @@ export const tradesService = {
 
   /** Trader — own sent & received proposals */
   getMyTrades(): Promise<Trade[]> {
-    return api.get('/trades/me');
+    return api.get('/trades');
   },
 
   getById(id: number): Promise<Trade> {
@@ -17,11 +17,11 @@ export const tradesService = {
   },
 
   accept(id: number): Promise<Trade> {
-    return api.patch(`/trades/${id}/accept`);
+    return api.put(`/trades/${id}/accept`);
   },
 
   reject(id: number): Promise<Trade> {
-    return api.patch(`/trades/${id}/reject`);
+    return api.put(`/trades/${id}/reject`);
   },
 
   complete(id: number): Promise<Trade> {
@@ -29,6 +29,6 @@ export const tradesService = {
   },
 
   cancel(id: number): Promise<Trade> {
-    return api.patch(`/trades/${id}/cancel`);
+    return api.put(`/trades/${id}/cancel`);
   },
 };

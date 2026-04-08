@@ -49,10 +49,10 @@ export class TradeRepository {
         OR: [{ proposer_id: traderId }, { receiver_id: traderId }],
       },
       include: {
-        proposer: true,
-        receiver: true,
-        proposer_item: { include: { photos: true } },
-        receiver_item: { include: { photos: true } },
+        proposer: { include: { user: { select: { user_name: true, first_name: true, last_name: true } } } },
+        receiver: { include: { user: { select: { user_name: true, first_name: true, last_name: true } } } },
+        proposer_item: { include: { photos: true, category: true } },
+        receiver_item: { include: { photos: true, category: true } },
       },
       orderBy: { created_at: 'desc' },
     });
