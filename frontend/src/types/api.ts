@@ -82,6 +82,8 @@ export interface TraderItem {
   category?: Category;
   photos?: ItemPhoto[];
   trader?: Pick<Trader, 'trader_id' | 'rating' | 'total_trades' | 'user'>;
+  user_trade_status?: 'available' | 'user_pending' | 'offered_to_you' | 'in_trade' | 'own_item' | 'own_item_has_proposals' | 'own_item_in_trade';
+  incoming_proposals_count?: number;
 }
 
 export interface CreateItemDto {

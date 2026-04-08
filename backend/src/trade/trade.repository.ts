@@ -7,39 +7,32 @@ import { TradeStatus } from '../infrastructure/generated/prisma/enums';
 export class TradeRepository {
   constructor(private readonly databaseService: DatabaseService) {}
 
+  readonly tradeInclude = {
+    proposer: { include: { user: { select: { user_name: true, first_name: true, last_name: true } } } },
+    receiver: { include: { user: { select: { user_name: true, first_name: true, last_name: true } } } },
+    proposer_item: { include: { photos: true, category: true } },
+    receiver_item: { include: { photos: true, category: true } },
+    conversation: true,
+  } as const;
+
   async create(proposerId: number, dto: CreateTradeDto) {
-    const trade = await this.databaseService.client.trade.create({
+    return this.databaseService.client.trade.create({
       data: {
         proposer_id: proposerId,
         proposer_item_id: dto.proposerItemId,
         receiver_id: dto.receiverId,
         receiver_item_id: dto.receiverItemId,
         status: 'PENDING',
-        conversation: {
-          create: {},
-        },
+        conversation: { create: {} },
       },
-      include: {
-        proposer: true,
-        receiver: true,
-        proposer_item: { include: { photos: true } },
-        receiver_item: { include: { photos: true } },
-        conversation: true,
-      },
+      include: this.tradeInclude,
     });
-    return trade;
   }
 
   async findById(id: number) {
     return this.databaseService.client.trade.findUnique({
       where: { trade_id: id },
-      include: {
-        proposer: true,
-        receiver: true,
-        proposer_item: { include: { photos: true, category: true } },
-        receiver_item: { include: { photos: true, category: true } },
-        conversation: true,
-      },
+      include: this.tradeInclude,
     });
   }
 
@@ -48,33 +41,19 @@ export class TradeRepository {
       where: {
         OR: [{ proposer_id: traderId }, { receiver_id: traderId }],
       },
-      include: {
-        proposer: { include: { user: { select: { user_name: true, first_name: true, last_name: true } } } },
-        receiver: { include: { user: { select: { user_name: true, first_name: true, last_name: true } } } },
-        proposer_item: { include: { photos: true, category: true } },
-        receiver_item: { include: { photos: true, category: true } },
-      },
+      include: this.tradeInclude,
       orderBy: { created_at: 'desc' },
     });
   }
 
-  async updateStatus(
-    id: number,
-    status: TradeStatus,
-    completedAt?: Date,
-  ) {
+  async updateStatus(id: number, status: TradeStatus, completedAt?: Date) {
     return this.databaseService.client.trade.update({
       where: { trade_id: id },
       data: {
         status,
         ...(completedAt ? { completed_at: completedAt } : {}),
       },
-      include: {
-        proposer: true,
-        receiver: true,
-        proposer_item: true,
-        receiver_item: true,
-      },
+      include: this.tradeInclude,
     });
   }
 }

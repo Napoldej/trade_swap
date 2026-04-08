@@ -16,6 +16,7 @@ import { UpdateItemDto } from './dto/update-item.dto';
 import { AddPhotoDto } from './dto/add-photo.dto';
 import { AuthGuard } from '../auth/auth.guard';
 import { RolesGuard } from '../common/guards/roles.guard';
+import { OptionalAuthGuard } from '../common/guards/optional-auth.guard';
 import { Roles } from '../common/decorators/roles.decorator';
 
 @Controller('items')
@@ -30,8 +31,11 @@ export class ItemController {
   }
 
   @Get()
-  async getAllItems() {
-    return this.itemService.getAllItems();
+  @UseGuards(OptionalAuthGuard)
+  async getAllItems(@Request() req: any) {
+    // Optionally pass the logged-in user's ID (null if unauthenticated)
+    const userId: number | null = req.user?.userId ?? null;
+    return this.itemService.getAllItems(userId);
   }
 
   @Get('my')

@@ -31,8 +31,17 @@ export class ItemService {
     return this.itemRepository.create(trader.trader_id, dto);
   }
 
-  async getAllItems() {
-    return this.itemRepository.findAll();
+  async getAllItems(userId: number | null) {
+    // Resolve trader_id from userId if authenticated
+    let traderId: number | null = null;
+    if (userId) {
+      const trader = await this.databaseService.client.trader.findUnique({
+        where: { user_id: userId },
+        select: { trader_id: true },
+      });
+      traderId = trader?.trader_id ?? null;
+    }
+    return this.itemRepository.findAll(traderId);
   }
 
   async getItemById(id: number) {
@@ -70,6 +79,7 @@ export class ItemService {
     if (!item) {
       throw new NotFoundException('Item not found');
     }
+    
 
     if (item.trader_id !== trader.trader_id) {
       throw new ForbiddenException('You do not own this item');
