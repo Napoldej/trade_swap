@@ -169,7 +169,9 @@ const Navbar = ({ roleBadge }: NavbarProps) => {
                     <DropdownMenuItem asChild><Link to="/my-trades">My Trades</Link></DropdownMenuItem>
                   </>
                 )}
-                <DropdownMenuItem asChild><Link to="/edit-profile">Edit Profile</Link></DropdownMenuItem>
+                {!isTrader && (
+                  <DropdownMenuItem asChild><Link to="/edit-profile">Edit Profile</Link></DropdownMenuItem>
+                )}
                 <DropdownMenuSeparator />
                 <DropdownMenuItem className="text-destructive" onClick={handleLogout}>Log Out</DropdownMenuItem>
               </DropdownMenuContent>

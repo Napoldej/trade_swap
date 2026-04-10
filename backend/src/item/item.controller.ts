@@ -9,19 +9,27 @@ import {
   ParseIntPipe,
   Request,
   UseGuards,
+  UseInterceptors,
+  UploadedFile,
+  BadRequestException,
 } from '@nestjs/common';
+import { FileInterceptor } from '@nestjs/platform-express';
+import { memoryStorage } from 'multer';
 import { ItemService } from './item.service';
 import { CreateItemDto } from './dto/create-item.dto';
 import { UpdateItemDto } from './dto/update-item.dto';
-import { AddPhotoDto } from './dto/add-photo.dto';
 import { AuthGuard } from '../auth/auth.guard';
 import { RolesGuard } from '../common/guards/roles.guard';
 import { OptionalAuthGuard } from '../common/guards/optional-auth.guard';
 import { Roles } from '../common/decorators/roles.decorator';
+import { S3Service } from '../common/s3/s3.service';
 
 @Controller('items')
 export class ItemController {
-  constructor(private readonly itemService: ItemService) {}
+  constructor(
+    private readonly itemService: ItemService,
+    private readonly s3Service: S3Service,
+  ) {}
 
   @Post()
   @UseGuards(AuthGuard, RolesGuard)
@@ -33,7 +41,6 @@ export class ItemController {
   @Get()
   @UseGuards(OptionalAuthGuard)
   async getAllItems(@Request() req: any) {
-    // Optionally pass the logged-in user's ID (null if unauthenticated)
     const userId: number | null = req.user?.userId ?? null;
     return this.itemService.getAllItems(userId);
   }
@@ -46,8 +53,10 @@ export class ItemController {
   }
 
   @Get(':id')
-  async getItemById(@Param('id', ParseIntPipe) id: number) {
-    return this.itemService.getItemById(id);
+  @UseGuards(OptionalAuthGuard)
+  async getItemById(@Request() req: any, @Param('id', ParseIntPipe) id: number) {
+    const userId: number | null = req.user?.userId ?? null;
+    return this.itemService.getItemById(id, userId);
   }
 
   @Put(':id')
@@ -71,14 +80,27 @@ export class ItemController {
     return this.itemService.deleteItem(req.user.userId, id);
   }
 
+  /**
+   * POST /items/:id/photos
+   * Accepts multipart/form-data with field "file".
+   * Optionally accepts "displayOrder" as form field (default 0).
+   * Uploads to S3 and saves the URL in ItemPhoto table.
+   */
   @Post(':id/photos')
   @UseGuards(AuthGuard, RolesGuard)
   @Roles('TRADER')
+  @UseInterceptors(FileInterceptor('file', { storage: memoryStorage() }))
   async addPhoto(
     @Request() req: any,
     @Param('id', ParseIntPipe) id: number,
-    @Body() dto: AddPhotoDto,
+    @UploadedFile() file: Express.Multer.File,
+    @Body('displayOrder') displayOrder?: string,
   ) {
-    return this.itemService.addPhoto(req.user.userId, id, dto);
+    if (!file) throw new BadRequestException('No file uploaded');
+
+    const photoUrl = await this.s3Service.uploadFile(file, 'items');
+    const order = displayOrder ? parseInt(displayOrder, 10) : 0;
+
+    return this.itemService.addPhoto(req.user.userId, id, photoUrl, order);
   }
 }

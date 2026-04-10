@@ -76,7 +76,7 @@ const TraderProfile = () => {
     : null;
 
   const approvedItems = (trader.items ?? []).filter((i) => i.status === "APPROVED" && i.is_available);
-  const isOwnProfile = user && trader.user_id === user.user_id;
+  const isOwnProfile = user && trader.user.user_id === user.user_id;
 
   return (
     <div className="min-h-screen flex flex-col">
@@ -90,9 +90,11 @@ const TraderProfile = () => {
           <div className="flex-1">
             <div className="flex items-center gap-3 mb-1">
               <h1 className="text-2xl font-bold">{displayName}</h1>
-              <Badge className="bg-success/10 text-success border-success/20">
-                <Shield className="h-3 w-3 mr-1" />Verified
-              </Badge>
+              {trader.user.verified && (
+                <Badge className="bg-success/10 text-success border-success/20">
+                  <Shield className="h-3 w-3 mr-1" />Verified
+                </Badge>
+              )}
             </div>
             <p className="text-muted-foreground mb-2">@{trader.user.user_name}</p>
             <div className="flex items-center gap-4 text-sm flex-wrap">

@@ -1,4 +1,4 @@
-import { api } from '@/lib/api';
+import { api, API_BASE_URL, ApiException } from '@/lib/api';
 import { CreateItemDto, TraderItem, UpdateItemDto } from '@/types/api';
 
 export const itemsService = {
@@ -21,10 +21,32 @@ export const itemsService = {
   },
 
   update(id: number, dto: UpdateItemDto): Promise<TraderItem> {
-    return api.patch(`/items/${id}`, dto);
+    return api.put(`/items/${id}`, dto);
   },
 
   remove(id: number): Promise<void> {
     return api.delete(`/items/${id}`);
+  },
+
+  /** Upload a photo to an item — uses FormData (multipart/form-data) */
+  async uploadPhoto(itemId: number, file: File, displayOrder = 0): Promise<unknown> {
+    const formData = new FormData();
+    formData.append('file', file);
+    formData.append('displayOrder', String(displayOrder));
+
+    const response = await fetch(`${API_BASE_URL}/items/${itemId}/photos`, {
+      method: 'POST',
+      credentials: 'include',
+      body: formData,
+      // Do NOT set Content-Type — browser sets it automatically with boundary
+    });
+
+    if (!response.ok) {
+      const data = await response.json().catch(() => ({}));
+      const msg = Array.isArray(data.message) ? data.message.join(', ') : data.message ?? `HTTP ${response.status}`;
+      throw new ApiException(response.status, msg, data);
+    }
+
+    return response.json();
   },
 };

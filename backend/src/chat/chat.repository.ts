@@ -5,12 +5,18 @@ import { DatabaseService } from '../database/database.service';
 export class ChatRepository {
   constructor(private readonly databaseService: DatabaseService) {}
 
+  private readonly senderInclude = {
+    sender: {
+      include: {
+        user: { select: { user_name: true, first_name: true, last_name: true } },
+      },
+    },
+  };
+
   async getMessages(conversationId: number) {
     return this.databaseService.client.message.findMany({
       where: { conversation_id: conversationId },
-      include: {
-        sender: true,
-      },
+      include: this.senderInclude,
       orderBy: { created_at: 'asc' },
     });
   }
@@ -22,9 +28,7 @@ export class ChatRepository {
         sender_id: senderId,
         content,
       },
-      include: {
-        sender: true,
-      },
+      include: this.senderInclude,
     });
   }
 

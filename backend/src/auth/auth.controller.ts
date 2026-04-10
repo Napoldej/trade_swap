@@ -29,7 +29,7 @@ export class AuthController {
 
     if ('access_token' in result) {
       this.setTokenCookies(res, result);
-      return { user_id: result.user_id, user_name: result.user_name, role: result.role };
+      return { user_id: result.user_id, user_name: result.user_name, role: result.role, trader_id: result.trader_id };
     }
 
     // VERIFIER pending — no tokens
@@ -41,7 +41,7 @@ export class AuthController {
   async login(@Body() dto: LoginDto, @Res({ passthrough: true }) res: Response) {
     const result = await this.authService.login(dto);
     this.setTokenCookies(res, result);
-    return { user_id: result.user_id, user_name: result.user_name, role: result.role };
+    return { user_id: result.user_id, user_name: result.user_name, role: result.role, trader_id: result.trader_id };
   }
 
   @Post('logout')
@@ -54,7 +54,7 @@ export class AuthController {
   private setTokenCookies(res: Response, result: AuthResult) {
     res.cookie('access_token', result.access_token, {
       ...COOKIE_OPTIONS,
-      maxAge: 15 * 60 * 1000, // 15 minutes
+      maxAge: 7 * 24 * 60 * 60 * 1000, // 7 days (matches JWT expiry)
     });
     res.cookie('refresh_token', result.refresh_token, {
       ...COOKIE_OPTIONS,

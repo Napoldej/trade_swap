@@ -5,11 +5,11 @@ export const API_BASE_URL = import.meta.env.VITE_API_URL ?? 'http://localhost:30
 // ─── User info stored in localStorage (non-sensitive, just for UI) ────────────
 
 export const userStorage = {
-  get: (): { user_id: number; user_name: string; role: string } | null => {
+  get: (): { user_id: number; user_name: string; role: string; trader_id: number | null } | null => {
     const raw = localStorage.getItem('user');
     return raw ? JSON.parse(raw) : null;
   },
-  set: (user: { user_id: number; user_name: string; role: string }) => {
+  set: (user: { user_id: number; user_name: string; role: string; trader_id?: number | null }) => {
     localStorage.setItem('user', JSON.stringify(user));
   },
   clear: () => localStorage.removeItem('user'),

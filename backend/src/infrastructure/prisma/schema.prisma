@@ -107,15 +107,17 @@ model ItemPhoto {
 
 
 model Trade {
-  trade_id         Int         @id @default(autoincrement())
-  proposer_id      Int
-  proposer_item_id Int
-  receiver_id      Int
-  receiver_item_id Int
-  status           TradeStatus @default(PENDING)
-  created_at       DateTime    @default(now())
-  updated_at       DateTime    @updatedAt
-  completed_at     DateTime?
+  trade_id            Int         @id @default(autoincrement())
+  proposer_id         Int
+  proposer_item_id    Int
+  receiver_id         Int
+  receiver_item_id    Int
+  status              TradeStatus @default(PENDING)
+  proposer_confirmed  Boolean     @default(false)
+  receiver_confirmed  Boolean     @default(false)
+  created_at          DateTime    @default(now())
+  updated_at          DateTime    @updatedAt
+  completed_at        DateTime?
 
   proposer      Trader     @relation("ProposerTrades", fields: [proposer_id], references: [trader_id])
   receiver      Trader     @relation("ReceiverTrades", fields: [receiver_id], references: [trader_id])

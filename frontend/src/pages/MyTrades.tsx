@@ -82,7 +82,16 @@ const MyTrades = () => {
                           <p className="font-semibold text-sm">{myItem?.item_name ?? "?"} ↔ {theirItem?.item_name ?? "?"}</p>
                           <p className="text-xs text-muted-foreground">with {otherUser ?? "Unknown"}</p>
                         </div>
-                        <Badge className={statusStyles[trade.status]}>{trade.status.toLowerCase()}</Badge>
+                        <div className="flex flex-col items-end gap-1">
+                          <Badge className={statusStyles[trade.status]}>{trade.status.toLowerCase()}</Badge>
+                          {trade.status === "ACCEPTED" && (() => {
+                            const iConfirmed = iAmProposer ? trade.proposer_confirmed : trade.receiver_confirmed;
+                            const otherConfirmed = iAmProposer ? trade.receiver_confirmed : trade.proposer_confirmed;
+                            if (iConfirmed && !otherConfirmed) return <span className="text-[10px] text-muted-foreground">Waiting for other trader</span>;
+                            if (!iConfirmed && otherConfirmed) return <span className="text-[10px] text-orange-500 font-medium">Partner confirmed!</span>;
+                            return null;
+                          })()}
+                        </div>
                         <span className="text-sm text-muted-foreground hidden md:block">
                           {format(new Date(trade.created_at), "MMM d, yyyy")}
                         </span>
@@ -100,14 +109,24 @@ const MyTrades = () => {
                           {trade.status === "PENDING" && iAmProposer && (
                             <Button size="sm" variant="outline" onClick={() => cancelMutation.mutate(trade.trade_id)} disabled={cancelMutation.isPending}>Cancel</Button>
                           )}
-                          {trade.status === "ACCEPTED" && (
-                            <>
-                              <Button size="sm" className="gradient-primary text-primary-foreground border-0" onClick={() => completeMutation.mutate(trade.trade_id)} disabled={completeMutation.isPending}>Complete</Button>
-                              <Link to={`/chat?trade=${trade.trade_id}`}>
-                                <Button size="sm" variant="outline"><MessageCircle className="h-3.5 w-3.5 mr-1" />Chat</Button>
-                              </Link>
-                            </>
-                          )}
+                          {trade.status === "ACCEPTED" && (() => {
+                            const iConfirmed = iAmProposer ? trade.proposer_confirmed : trade.receiver_confirmed;
+                            const otherConfirmed = iAmProposer ? trade.receiver_confirmed : trade.proposer_confirmed;
+                            return (
+                              <>
+                                {iConfirmed ? (
+                                  <Button size="sm" disabled className="bg-success/10 text-success border border-success/20 text-xs">You Confirmed ✓</Button>
+                                ) : (
+                                  <Button size="sm" className={`text-primary-foreground border-0 ${otherConfirmed ? "bg-orange-500 hover:bg-orange-600" : "gradient-primary"}`} onClick={() => completeMutation.mutate(trade.trade_id)} disabled={completeMutation.isPending}>
+                                    {otherConfirmed ? "Confirm!" : "Complete"}
+                                  </Button>
+                                )}
+                                <Link to={`/chat?trade=${trade.trade_id}`}>
+                                  <Button size="sm" variant="outline"><MessageCircle className="h-3.5 w-3.5 mr-1" />Chat</Button>
+                                </Link>
+                              </>
+                            );
+                          })()}
                           {trade.status === "COMPLETED" && (
                             <Link to={`/rate-trade/${trade.trade_id}`}>
                               <Button size="sm" className="gradient-primary text-primary-foreground border-0">

@@ -137,11 +137,36 @@ export class TradeService {
     const trader = await this.getTraderByUserId(userId);
     const trade = await this.tradeRepository.findById(tradeId);
     if (!trade) throw new NotFoundException('Trade not found');
-    if (trade.proposer_id !== trader.trader_id && trade.receiver_id !== trader.trader_id)
+
+    const isProposer = trade.proposer_id === trader.trader_id;
+    const isReceiver = trade.receiver_id === trader.trader_id;
+    if (!isProposer && !isReceiver)
       throw new ForbiddenException('You are not part of this trade');
     if (trade.status !== 'ACCEPTED') throw new BadRequestException('Trade must be ACCEPTED before completing');
 
-    // Transaction: complete trade + mark both items unavailable + cancel leftover pending trades
+    // Check if already confirmed
+    if (isProposer && trade.proposer_confirmed)
+      throw new BadRequestException('You have already confirmed this trade');
+    if (isReceiver && trade.receiver_confirmed)
+      throw new BadRequestException('You have already confirmed this trade');
+
+    const newProposerConfirmed = isProposer ? true : trade.proposer_confirmed;
+    const newReceiverConfirmed = isReceiver ? true : trade.receiver_confirmed;
+    const bothConfirmed = newProposerConfirmed && newReceiverConfirmed;
+
+    if (!bothConfirmed) {
+      // Save partial confirmation — keep status ACCEPTED
+      return this.databaseService.client.trade.update({
+        where: { trade_id: tradeId },
+        data: {
+          proposer_confirmed: newProposerConfirmed,
+          receiver_confirmed: newReceiverConfirmed,
+        },
+        include: this.tradeRepository.tradeInclude,
+      });
+    }
+
+    // Both confirmed — complete the trade
     return this.databaseService.client.$transaction(async (tx) => {
       const itemIds = [trade.proposer_item_id, trade.receiver_item_id];
 
@@ -164,7 +189,12 @@ export class TradeService {
 
       return tx.trade.update({
         where: { trade_id: tradeId },
-        data: { status: 'COMPLETED', completed_at: new Date() },
+        data: {
+          status: 'COMPLETED',
+          completed_at: new Date(),
+          proposer_confirmed: true,
+          receiver_confirmed: true,
+        },
         include: this.tradeRepository.tradeInclude,
       });
     });

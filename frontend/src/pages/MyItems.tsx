@@ -1,5 +1,5 @@
 import { useState } from "react";
-import { Plus, Trash2, Package, Loader2 } from "lucide-react";
+import { Plus, Trash2, Package, Loader2, Pencil } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
@@ -95,6 +95,11 @@ const MyItems = () => {
                       <span className="text-sm text-muted-foreground hidden md:block">
                         {format(new Date(item.created_at), "MMM d, yyyy")}
                       </span>
+                      <Link to={`/edit-item/${item.item_id}`}>
+                        <Button variant="ghost" size="icon">
+                          <Pencil className="h-4 w-4" />
+                        </Button>
+                      </Link>
                       <Button
                         variant="ghost"
                         size="icon"

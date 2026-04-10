@@ -1,9 +1,10 @@
 import { useState, useEffect } from "react";
-import { Camera, Loader2 } from "lucide-react";
+import { Camera, Loader2, Shield } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Avatar, AvatarFallback } from "@/components/ui/avatar";
+import { Badge } from "@/components/ui/badge";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import Navbar from "@/components/layout/Navbar";
 import { useQuery } from "@tanstack/react-query";
@@ -93,7 +94,14 @@ const EditProfile = () => {
                   </button>
                 </div>
                 <div>
-                  <p className="font-semibold">{displayName}</p>
+                  <div className="flex items-center gap-2">
+                    <p className="font-semibold">{displayName}</p>
+                    {profile?.verified && (
+                      <Badge className="bg-success/10 text-success border-success/20 text-[10px] px-2 py-0.5">
+                        <Shield className="h-3 w-3 mr-1" />Verified
+                      </Badge>
+                    )}
+                  </div>
                   <p className="text-sm text-muted-foreground">@{profile?.user_name}</p>
                 </div>
               </div>

@@ -46,7 +46,7 @@ export interface Trader {
   user_id: number;
   rating: number;
   total_trades: number;
-  user: Pick<User, 'user_name' | 'first_name' | 'last_name' | 'created_at'>;
+  user: Pick<User, 'user_id' | 'user_name' | 'first_name' | 'last_name' | 'verified' | 'created_at'>;
   items?: TraderItem[];
 }
 
@@ -107,6 +107,8 @@ export interface Trade {
   receiver_id: number;
   receiver_item_id: number;
   status: TradeStatus;
+  proposer_confirmed: boolean;
+  receiver_confirmed: boolean;
   created_at: string;
   updated_at: string;
   completed_at: string | null;

@@ -7,7 +7,6 @@ import { ItemRepository } from './item.repository';
 import { DatabaseService } from '../database/database.service';
 import { CreateItemDto } from './dto/create-item.dto';
 import { UpdateItemDto } from './dto/update-item.dto';
-import { AddPhotoDto } from './dto/add-photo.dto';
 
 @Injectable()
 export class ItemService {
@@ -44,8 +43,16 @@ export class ItemService {
     return this.itemRepository.findAll(traderId);
   }
 
-  async getItemById(id: number) {
-    const item = await this.itemRepository.findById(id);
+  async getItemById(id: number, userId: number | null = null) {
+    let traderId: number | null = null;
+    if (userId) {
+      const trader = await this.databaseService.client.trader.findUnique({
+        where: { user_id: userId },
+        select: { trader_id: true },
+      });
+      traderId = trader?.trader_id ?? null;
+    }
+    const item = await this.itemRepository.findById(id, traderId);
     if (!item) {
       throw new NotFoundException('Item not found');
     }
@@ -88,7 +95,7 @@ export class ItemService {
     return this.itemRepository.delete(itemId);
   }
 
-  async addPhoto(userId: number, itemId: number, dto: AddPhotoDto) {
+  async addPhoto(userId: number, itemId: number, photoUrl: string, displayOrder: number) {
     const trader = await this.getTraderByUserId(userId);
     const item = await this.itemRepository.findById(itemId);
 
@@ -100,6 +107,6 @@ export class ItemService {
       throw new ForbiddenException('You do not own this item');
     }
 
-    return this.itemRepository.addPhoto(itemId, dto.photoUrl, dto.displayOrder);
+    return this.itemRepository.addPhoto(itemId, photoUrl, displayOrder);
   }
 }

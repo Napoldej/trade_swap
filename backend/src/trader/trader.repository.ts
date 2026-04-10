@@ -17,9 +17,11 @@ export class TraderRepository {
       include: {
         user: {
           select: {
+            user_id: true,
             user_name: true,
             first_name: true,
             last_name: true,
+            verified: true,
             created_at: true,
           },
         },

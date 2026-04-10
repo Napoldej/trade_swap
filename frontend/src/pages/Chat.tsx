@@ -63,6 +63,11 @@ const Chat = () => {
   const otherUser = activeTrade ? getOtherUser(activeTrade) : null;
   const otherName = otherUser ? (otherUser.user_name) : "Unknown";
 
+  const iAmProposer = activeTrade?.proposer?.user?.user_name === user?.user_name;
+  const myTraderId = iAmProposer
+    ? activeTrade?.proposer?.trader_id
+    : activeTrade?.receiver?.trader_id;
+
   return (
     <div className="min-h-screen flex flex-col">
       <Navbar />
@@ -124,12 +129,12 @@ const Chat = () => {
                 <p className="text-center text-sm text-muted-foreground py-10">No messages yet. Say hi!</p>
               ) : (
                 messages.map((msg) => {
-                  const isMe = msg.sender?.user?.user_name === user?.user_name;
+                  const isMe = msg.sender_id === myTraderId;
                   return (
-                    <div key={msg.message_id} className={cn("flex", isMe ? "justify-end" : "justify-start")}>
-                      <div className={cn("max-w-xs rounded-2xl px-4 py-2.5", isMe ? "gradient-primary text-primary-foreground rounded-br-md" : "bg-muted rounded-bl-md")}>
+                    <div key={msg.message_id} className={cn("flex", isMe ? "justify-start" : "justify-end")}>
+                      <div className={cn("max-w-xs rounded-2xl px-4 py-2.5", isMe ? "bg-muted rounded-bl-md" : "gradient-primary text-primary-foreground rounded-br-md")}>
                         <p className="text-sm">{msg.content}</p>
-                        <p className={cn("text-[10px] mt-1", isMe ? "text-primary-foreground/70" : "text-muted-foreground")}>
+                        <p className={cn("text-[10px] mt-1", isMe ? "text-muted-foreground" : "text-primary-foreground/70")}>
                           {format(new Date(msg.created_at), "h:mm a")}
                         </p>
                       </div>

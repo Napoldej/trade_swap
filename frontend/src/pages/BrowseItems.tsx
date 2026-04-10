@@ -69,11 +69,16 @@ const ItemCard = ({ item }: { item: TraderItem }) => {
         <Link to={`/item/${item.item_id}`}>
           <h3 className="font-semibold mb-1 hover:text-primary transition-colors">{item.item_name}</h3>
         </Link>
-        {item.category && (
-          <Badge variant="secondary" className="text-xs mb-2">{item.category.category_name}</Badge>
-        )}
+        <div className="flex items-center gap-1 flex-wrap mb-2">
+          {item.category && (
+            <Badge variant="secondary" className="text-xs">{item.category.category_name}</Badge>
+          )}
+          <Badge className="bg-success/10 text-success border border-success/20 text-xs">Approved</Badge>
+        </div>
         <div className="flex items-center gap-1 text-sm text-muted-foreground mb-3">
-          <span>{ownerName}</span>
+          <Link to={`/profile/${item.trader?.trader_id}`} className="hover:text-primary hover:underline transition-colors">
+            {ownerName}
+          </Link>
           <Star className="h-3 w-3 fill-warning text-warning ml-1" />
           <span>{rating.toFixed(1)}</span>
         </div>

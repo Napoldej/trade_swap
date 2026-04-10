@@ -19,6 +19,7 @@ import Chat from "./pages/Chat";
 import RateTrade from "./pages/RateTrade";
 import TraderProfile from "./pages/TraderProfile";
 import EditProfile from "./pages/EditProfile";
+import EditItem from "./pages/EditItem";
 import Notifications from "./pages/Notifications";
 import VerifierDashboard from "./pages/verifier/VerifierDashboard";
 import VerifyItem from "./pages/verifier/VerifyItem";
@@ -65,6 +66,7 @@ const App = () => (
           <Route path="/rate-trade/:id" element={<RateTrade />} />
           <Route path="/profile/:id" element={<TraderProfile />} />
           <Route path="/edit-profile" element={<EditProfile />} />
+          <Route path="/edit-item/:id" element={<EditItem />} />
           <Route path="/notifications" element={<Notifications />} />
           <Route path="/verifier" element={<VerifierDashboard />} />
           <Route path="/verifier/review/:id" element={<VerifyItem />} />

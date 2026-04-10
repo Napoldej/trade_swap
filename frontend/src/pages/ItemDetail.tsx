@@ -1,5 +1,5 @@
 import { useState } from "react";
-import { ChevronLeft, ChevronRight, Star, Shield, Flag, Loader2 } from "lucide-react";
+import { ChevronLeft, ChevronRight, Star, Shield, Flag, Loader2, Pencil } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
 import { Card, CardContent } from "@/components/ui/card";
@@ -50,6 +50,78 @@ const ItemDetail = () => {
     : "Unknown";
   const ownerInitials = ownerName.slice(0, 2).toUpperCase();
 
+  const s = item.user_trade_status ?? "available";
+  const count = item.incoming_proposals_count ?? 0;
+  const isOwn = s === "own_item" || s === "own_item_has_proposals" || s === "own_item_in_trade";
+
+  const renderAction = () => {
+    if (s === "own_item_in_trade") {
+      return (
+        <Link to="/my-trades">
+          <Button size="lg" className="w-full gradient-primary text-primary-foreground border-0 hover:opacity-90">
+            View Trade
+          </Button>
+        </Link>
+      );
+    }
+    if (s === "own_item_has_proposals") {
+      return (
+        <div className="space-y-2">
+          <Link to="/my-trades">
+            <Button size="lg" className="w-full bg-orange-500 hover:bg-orange-600 text-white border-0">
+              View Proposals ({count})
+            </Button>
+          </Link>
+          <Link to={`/my-items`}>
+            <Button size="lg" variant="outline" className="w-full">
+              <Pencil className="h-4 w-4 mr-2" /> Edit Item
+            </Button>
+          </Link>
+        </div>
+      );
+    }
+    if (s === "own_item") {
+      return (
+        <Link to="/my-items">
+          <Button size="lg" variant="outline" className="w-full">
+            <Pencil className="h-4 w-4 mr-2" /> Manage Item
+          </Button>
+        </Link>
+      );
+    }
+    if (s === "in_trade") {
+      return (
+        <Button size="lg" className="w-full bg-destructive/10 text-destructive border border-destructive/20" disabled>
+          In Trade
+        </Button>
+      );
+    }
+    if (s === "offered_to_you") {
+      return (
+        <Link to="/my-trades">
+          <Button size="lg" className="w-full bg-orange-500 hover:bg-orange-600 text-white border-0">
+            View Proposal (Offered to You)
+          </Button>
+        </Link>
+      );
+    }
+    if (s === "user_pending") {
+      return (
+        <Button size="lg" className="w-full bg-warning/10 text-warning border border-warning/30" disabled>
+          Your Trade Pending
+        </Button>
+      );
+    }
+    // available
+    return (
+      <Link to={`/propose-trade?item=${item.item_id}`}>
+        <Button size="lg" className="w-full gradient-primary text-primary-foreground border-0 hover:opacity-90">
+          Propose Trade
+        </Button>
+      </Link>
+    );
+  };
+
   return (
     <div className="min-h-screen flex flex-col">
       <Navbar />
@@ -91,6 +163,15 @@ const ItemDetail = () => {
             <div className="flex gap-2 mb-4 flex-wrap">
               {item.category && <Badge variant="secondary">{item.category.category_name}</Badge>}
               <Badge className="bg-success/10 text-success border-success/20"><Shield className="h-3 w-3 mr-1" />Approved</Badge>
+              {s === "offered_to_you" && (
+                <Badge className="bg-orange-500 text-white">Offered to You</Badge>
+              )}
+              {s === "user_pending" && (
+                <Badge className="bg-warning/90 text-warning-foreground">Your Trade Pending</Badge>
+              )}
+              {(s === "in_trade" || s === "own_item_in_trade") && (
+                <Badge className="bg-destructive/80 text-white">In Trade</Badge>
+              )}
             </div>
 
             <p className="text-muted-foreground mb-6 leading-relaxed">{item.description}</p>
@@ -121,14 +202,13 @@ const ItemDetail = () => {
               </Card>
             )}
 
-            <Link to={`/propose-trade?item=${item.item_id}`}>
-              <Button size="lg" className="w-full gradient-primary text-primary-foreground border-0 hover:opacity-90 mb-3">
-                Propose Trade
-              </Button>
-            </Link>
-            <button className="text-sm text-muted-foreground hover:text-destructive flex items-center gap-1 mx-auto">
-              <Flag className="h-3.5 w-3.5" /> Report Item
-            </button>
+            {renderAction()}
+
+            {!isOwn && (
+              <button className="text-sm text-muted-foreground hover:text-destructive flex items-center gap-1 mx-auto mt-3">
+                <Flag className="h-3.5 w-3.5" /> Report Item
+              </button>
+            )}
           </div>
         </div>
       </div>
