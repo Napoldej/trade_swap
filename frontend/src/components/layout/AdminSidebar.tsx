@@ -1,13 +1,10 @@
-import { LayoutDashboard, Users, FolderOpen, Megaphone, ShieldCheck, BarChart3, Store, LogOut } from "lucide-react";
+import { Users, ShieldCheck, BarChart3, Store, LogOut } from "lucide-react";
 import { Link, useLocation, useNavigate } from "react-router-dom";
 import { cn } from "@/lib/utils";
 import { useAuth } from "@/context/AuthContext";
 
 const adminNav = [
-  { title: "Dashboard", url: "/admin", icon: LayoutDashboard },
   { title: "User Management", url: "/admin/users", icon: Users },
-  { title: "Categories", url: "/admin/categories", icon: FolderOpen },
-  { title: "Announcements", url: "/admin/announcements", icon: Megaphone },
   { title: "Pending Items", url: "/admin/items", icon: ShieldCheck },
   { title: "Analytics", url: "/admin/analytics", icon: BarChart3 },
 ];

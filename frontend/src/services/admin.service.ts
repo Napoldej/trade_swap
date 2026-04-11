@@ -20,6 +20,14 @@ export const adminService = {
     return api.patch(`/admin/users/${id}/role`);
   },
 
+  verifyUser(id: number): Promise<User> {
+    return api.put(`/admin/users/${id}/verify`);
+  },
+
+  unverifyUser(id: number): Promise<User> {
+    return api.put(`/admin/users/${id}/unverify`);
+  },
+
   // ─── Verifier approval ──────────────────────────────────────────────────────
 
   getPendingVerifiers(): Promise<User[]> {

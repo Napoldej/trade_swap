@@ -53,6 +53,22 @@ export class AdminService {
     return this.adminRepository.deleteCategory(id);
   }
 
+  async getAnalytics() {
+    return this.adminRepository.getAnalytics();
+  }
+
+  async verifyUser(userId: number) {
+    const user = await this.databaseService.client.user.findUnique({ where: { user_id: userId } });
+    if (!user) throw new NotFoundException('User not found');
+    return this.adminRepository.setVerified(userId, true);
+  }
+
+  async unverifyUser(userId: number) {
+    const user = await this.databaseService.client.user.findUnique({ where: { user_id: userId } });
+    if (!user) throw new NotFoundException('User not found');
+    return this.adminRepository.setVerified(userId, false);
+  }
+
   async getPendingVerifiers() {
     return this.adminRepository.getPendingVerifiers();
   }

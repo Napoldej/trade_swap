@@ -56,6 +56,16 @@ const UserManagement = () => {
     onSuccess: () => queryClient.invalidateQueries({ queryKey: ["pending-verifiers"] }),
   });
 
+  const verifyMutation = useMutation({
+    mutationFn: adminService.verifyUser,
+    onSuccess: () => queryClient.invalidateQueries({ queryKey: ["admin-users"] }),
+  });
+
+  const unverifyMutation = useMutation({
+    mutationFn: adminService.unverifyUser,
+    onSuccess: () => queryClient.invalidateQueries({ queryKey: ["admin-users"] }),
+  });
+
   const filtered = users.filter((u) =>
     u.user_name.toLowerCase().includes(search.toLowerCase()) ||
     [u.first_name, u.last_name].filter(Boolean).join(" ").toLowerCase().includes(search.toLowerCase())
@@ -133,6 +143,11 @@ const UserManagement = () => {
                                 <Button variant="ghost" size="icon"><MoreHorizontal className="h-4 w-4" /></Button>
                               </DropdownMenuTrigger>
                               <DropdownMenuContent align="end">
+                                <DropdownMenuItem
+                                  onClick={() => u.verified ? unverifyMutation.mutate(u.user_id) : verifyMutation.mutate(u.user_id)}
+                                >
+                                  {u.verified ? "Remove Verified" : "Verify User"}
+                                </DropdownMenuItem>
                                 <DropdownMenuItem
                                   className="text-destructive"
                                   onClick={() => isBanned ? unbanMutation.mutate(u.user_id) : banMutation.mutate(u.user_id)}

@@ -67,6 +67,27 @@ export class AdminController {
     await this.adminService.deleteCategory(id);
   }
 
+  @Put('users/:id/verify')
+  @UseGuards(AuthGuard, RolesGuard)
+  @Roles('ADMIN')
+  async verifyUser(@Param('id', ParseIntPipe) id: number) {
+    return this.adminService.verifyUser(id);
+  }
+
+  @Put('users/:id/unverify')
+  @UseGuards(AuthGuard, RolesGuard)
+  @Roles('ADMIN')
+  async unverifyUser(@Param('id', ParseIntPipe) id: number) {
+    return this.adminService.unverifyUser(id);
+  }
+
+  @Get('analytics')
+  @UseGuards(AuthGuard, RolesGuard)
+  @Roles('ADMIN')
+  async getAnalytics() {
+    return this.adminService.getAnalytics();
+  }
+
   @Get('verifiers/pending')
   @UseGuards(AuthGuard, RolesGuard)
   @Roles('ADMIN')
