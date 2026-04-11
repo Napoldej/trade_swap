@@ -9,4 +9,8 @@ export const chatService = {
   sendMessage(tradeId: number, dto: SendMessageDto): Promise<Message> {
     return api.post(`/trades/${tradeId}/messages`, dto);
   },
+
+  getUnreadCount(): Promise<{ count: number }> {
+    return api.get('/chat/unread-count');
+  },
 };
