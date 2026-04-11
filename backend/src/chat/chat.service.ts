@@ -43,14 +43,22 @@ export class ChatService {
   }
 
   async getMessages(userId: number, tradeId: number) {
-    await this.getTradeAndVerifyAccess(userId, tradeId);
+    const { trader } = await this.getTradeAndVerifyAccess(userId, tradeId);
 
     const conversation = await this.chatRepository.findConversationByTrade(tradeId);
     if (!conversation) {
       throw new NotFoundException('Conversation not found for this trade');
     }
 
+    // Mark conversation as read for this trader
+    await this.chatRepository.markRead(conversation.conversation_id, trader.trader_id);
+
     return this.chatRepository.getMessages(conversation.conversation_id);
+  }
+
+  async getUnreadCount(userId: number) {
+    const trader = await this.getTraderByUserId(userId);
+    return this.chatRepository.getUnreadCount(trader.trader_id);
   }
 
   async sendMessage(userId: number, tradeId: number, dto: SendMessageDto) {
