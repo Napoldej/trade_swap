@@ -37,3 +37,16 @@ export class ChatController {
     return this.chatService.sendMessage(req.user.userId, tradeId, dto);
   }
 }
+
+@Controller('chat')
+@UseGuards(AuthGuard, RolesGuard)
+@Roles('TRADER')
+export class ChatMetaController {
+  constructor(private readonly chatService: ChatService) {}
+
+  @Get('unread-count')
+  async getUnreadCount(@Request() req: any) {
+    const count = await this.chatService.getUnreadCount(req.user.userId);
+    return { count };
+  }
+}
