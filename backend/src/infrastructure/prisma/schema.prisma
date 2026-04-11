@@ -28,6 +28,7 @@ model User {
 
   trader         Trader?
   verified_items TraderItem[] @relation("VerifiedBy")
+  notifications  Notification[]
 
   @@map("users")
 }
@@ -47,12 +48,13 @@ model Trader {
 
   user User @relation(fields: [user_id], references: [user_id], onDelete: Cascade)
 
-  items            TraderItem[]
-  proposed_trades  Trade[]  @relation("ProposerTrades")
-  received_trades  Trade[]  @relation("ReceiverTrades")
-  sent_messages    Message[]
-  ratings_given    Rating[] @relation("RaterRatings")
-  ratings_received Rating[] @relation("RateeRatings")
+  items              TraderItem[]
+  proposed_trades    Trade[]              @relation("ProposerTrades")
+  received_trades    Trade[]              @relation("ReceiverTrades")
+  sent_messages      Message[]
+  ratings_given      Rating[]             @relation("RaterRatings")
+  ratings_received   Rating[]             @relation("RateeRatings")
+  conversation_reads ConversationRead[]
 
   @@map("traders")
 }
@@ -161,8 +163,9 @@ model Conversation {
   conversation_id Int @id @default(autoincrement())
   trade_id        Int @unique
 
-  trade    Trade     @relation(fields: [trade_id], references: [trade_id], onDelete: Cascade)
+  trade    Trade              @relation(fields: [trade_id], references: [trade_id], onDelete: Cascade)
   messages Message[]
+  reads    ConversationRead[]
 
   @@map("conversations")
 }
@@ -185,4 +188,29 @@ enum ItemStatus {
   PENDING
   APPROVED
   REJECTED
+}
+
+model ConversationRead {
+  id              Int      @id @default(autoincrement())
+  conversation_id Int
+  trader_id       Int
+  last_read_at    DateTime @default(now())
+
+  conversation Conversation @relation(fields: [conversation_id], references: [conversation_id], onDelete: Cascade)
+  trader       Trader       @relation(fields: [trader_id], references: [trader_id], onDelete: Cascade)
+
+  @@unique([conversation_id, trader_id])
+  @@map("conversation_reads")
+}
+
+model Notification {
+  notification_id Int      @id @default(autoincrement())
+  user_id         Int
+  message         String
+  is_read         Boolean  @default(false)
+  created_at      DateTime @default(now())
+
+  user User @relation(fields: [user_id], references: [user_id], onDelete: Cascade)
+
+  @@map("notifications")
 }

@@ -172,12 +172,29 @@ export interface Notification {
 // ─── Admin ────────────────────────────────────────────────────────────────────
 
 export interface AdminAnalytics {
-  total_users: number;
-  total_traders: number;
-  total_verifiers: number;
-  total_items: number;
-  total_trades: number;
-  trades_by_status: Record<TradeStatus, number>;
+  totalUsers: number;
+  totalTraders: number;
+  totalItems: number;
+  totalTrades: number;
+  completionRate: number;
+  tradesByStatus: Record<string, number>;
+  itemsByStatus: Record<string, number>;
+  topTraders: {
+    trader_id: number;
+    name: string;
+    user_name: string;
+    rating: number;
+    total_trades: number;
+  }[];
+  topCategories: {
+    category_id: number;
+    name: string;
+    item_count: number;
+  }[];
+  registrationsByMonth: {
+    month: string;
+    count: number;
+  }[];
 }
 
 // ─── Verifier ─────────────────────────────────────────────────────────────────

@@ -12,6 +12,9 @@ import {
 } from "@/components/ui/dropdown-menu";
 import { Avatar, AvatarFallback } from "@/components/ui/avatar";
 import { useAuth } from "@/context/AuthContext";
+import { useQuery } from "@tanstack/react-query";
+import { notificationsService } from "@/services/notifications.service";
+import { chatService } from "@/services/chat.service";
 
 interface NavbarProps {
   roleBadge?: string;
@@ -20,6 +23,26 @@ interface NavbarProps {
 const Navbar = ({ roleBadge }: NavbarProps) => {
   const { user, logout } = useAuth();
   const navigate = useNavigate();
+
+  const { data: unreadCount = 0 } = useQuery({
+    queryKey: ["notifications-unread"],
+    queryFn: async () => {
+      const notifications = await notificationsService.getMyNotifications();
+      return notifications.filter((n) => !n.is_read).length;
+    },
+    enabled: !!user,
+    refetchInterval: 30000,
+  });
+
+  const { data: unreadMessages = 0 } = useQuery({
+    queryKey: ["messages-unread"],
+    queryFn: async () => {
+      const res = await chatService.getUnreadCount();
+      return res.count;
+    },
+    enabled: !!user && user.role === "TRADER",
+    refetchInterval: 30000,
+  });
 
   const initials = user?.user_name ? user.user_name.slice(0, 2).toUpperCase() : "?";
   const profilePath = user?.trader_id ? `/profile/${user.trader_id}` : "/edit-profile";
@@ -117,14 +140,24 @@ const Navbar = ({ roleBadge }: NavbarProps) => {
           {user && (
             <>
               <Link to="/notifications">
-                <Button variant="ghost" size="icon">
+                <Button variant="ghost" size="icon" className="relative">
                   <Bell className="h-5 w-5" />
+                  {unreadCount > 0 && (
+                    <span className="absolute top-1 right-1 flex h-4 w-4 items-center justify-center rounded-full bg-destructive text-[10px] font-bold text-white">
+                      {unreadCount > 9 ? "9+" : unreadCount}
+                    </span>
+                  )}
                 </Button>
               </Link>
               {isTrader && (
                 <Link to="/chat">
-                  <Button variant="ghost" size="icon">
+                  <Button variant="ghost" size="icon" className="relative">
                     <MessageCircle className="h-5 w-5" />
+                    {unreadMessages > 0 && (
+                      <span className="absolute top-1 right-1 flex h-4 w-4 items-center justify-center rounded-full bg-destructive text-[10px] font-bold text-white">
+                        {unreadMessages > 9 ? "9+" : unreadMessages}
+                      </span>
+                    )}
                   </Button>
                 </Link>
               )}

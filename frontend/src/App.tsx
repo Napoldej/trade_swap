@@ -26,8 +26,6 @@ import VerifyItem from "./pages/verifier/VerifyItem";
 import VerifierReports from "./pages/verifier/VerifierReports";
 import AdminDashboard from "./pages/admin/AdminDashboard";
 import UserManagement from "./pages/admin/UserManagement";
-import CategoryManagement from "./pages/admin/CategoryManagement";
-import AnnouncementManagement from "./pages/admin/AnnouncementManagement";
 import AdminAnalytics from "./pages/admin/AdminAnalytics";
 import AdminItemReview from "./pages/admin/AdminItemReview";
 import NotFound from "./pages/NotFound";
@@ -36,7 +34,6 @@ const queryClient = new QueryClient({
   defaultOptions: {
     queries: {
       retry: (failureCount, error: any) => {
-        // Don't retry on 4xx client errors
         if (error?.statusCode >= 400 && error?.statusCode < 500) return false;
         return failureCount < 2;
       },
@@ -75,8 +72,6 @@ const App = () => (
           <Route path="/verifier/flagged" element={<VerifierDashboard />} />
           <Route path="/admin" element={<AdminDashboard />} />
           <Route path="/admin/users" element={<UserManagement />} />
-          <Route path="/admin/categories" element={<CategoryManagement />} />
-          <Route path="/admin/announcements" element={<AnnouncementManagement />} />
           <Route path="/admin/analytics" element={<AdminAnalytics />} />
           <Route path="/admin/items" element={<AdminItemReview />} />
           <Route path="/admin/reports" element={<VerifierReports />} />
