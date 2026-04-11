@@ -28,6 +28,7 @@ import AdminDashboard from "./pages/admin/AdminDashboard";
 import UserManagement from "./pages/admin/UserManagement";
 import AdminAnalytics from "./pages/admin/AdminAnalytics";
 import AdminItemReview from "./pages/admin/AdminItemReview";
+import AdminItemManagement from "./pages/admin/AdminItemManagement";
 import NotFound from "./pages/NotFound";
 
 const queryClient = new QueryClient({
@@ -74,6 +75,7 @@ const App = () => (
           <Route path="/admin/users" element={<UserManagement />} />
           <Route path="/admin/analytics" element={<AdminAnalytics />} />
           <Route path="/admin/items" element={<AdminItemReview />} />
+          <Route path="/admin/manage-items" element={<AdminItemManagement />} />
           <Route path="/admin/reports" element={<VerifierReports />} />
           <Route path="*" element={<NotFound />} />
         </Routes>

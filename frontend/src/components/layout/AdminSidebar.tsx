@@ -1,4 +1,4 @@
-import { Users, ShieldCheck, BarChart3, Store, LogOut } from "lucide-react";
+import { Users, ShieldCheck, BarChart3, Store, LogOut, Package } from "lucide-react";
 import { Link, useLocation, useNavigate } from "react-router-dom";
 import { cn } from "@/lib/utils";
 import { useAuth } from "@/context/AuthContext";
@@ -6,6 +6,7 @@ import { useAuth } from "@/context/AuthContext";
 const adminNav = [
   { title: "User Management", url: "/admin/users", icon: Users },
   { title: "Pending Items", url: "/admin/items", icon: ShieldCheck },
+  { title: "All Items", url: "/admin/manage-items", icon: Package },
   { title: "Analytics", url: "/admin/analytics", icon: BarChart3 },
 ];
 

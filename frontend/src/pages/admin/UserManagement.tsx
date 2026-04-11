@@ -1,4 +1,4 @@
-import { Search, MoreHorizontal, Loader2, Check, X } from "lucide-react";
+import { Search, MoreHorizontal, Loader2, Check, X, Pencil, Trash2 } from "lucide-react";
 import { useState } from "react";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
@@ -6,11 +6,31 @@ import { Badge } from "@/components/ui/badge";
 import { Avatar, AvatarFallback } from "@/components/ui/avatar";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table";
-import { DropdownMenu, DropdownMenuContent, DropdownMenuItem, DropdownMenuTrigger } from "@/components/ui/dropdown-menu";
+import { DropdownMenu, DropdownMenuContent, DropdownMenuItem, DropdownMenuSeparator, DropdownMenuTrigger } from "@/components/ui/dropdown-menu";
 import { Card, CardContent } from "@/components/ui/card";
+import {
+  Dialog,
+  DialogContent,
+  DialogHeader,
+  DialogTitle,
+  DialogFooter,
+} from "@/components/ui/dialog";
+import {
+  AlertDialog,
+  AlertDialogAction,
+  AlertDialogCancel,
+  AlertDialogContent,
+  AlertDialogDescription,
+  AlertDialogFooter,
+  AlertDialogHeader,
+  AlertDialogTitle,
+} from "@/components/ui/alert-dialog";
+import { Label } from "@/components/ui/label";
+import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import AdminSidebar from "@/components/layout/AdminSidebar";
 import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
 import { adminService } from "@/services/admin.service";
+import { User } from "@/types/api";
 import { format } from "date-fns";
 
 const roleStyles: Record<string, string> = {
@@ -21,6 +41,9 @@ const roleStyles: Record<string, string> = {
 
 const UserManagement = () => {
   const [search, setSearch] = useState("");
+  const [editUser, setEditUser] = useState<User | null>(null);
+  const [editForm, setEditForm] = useState({ first_name: "", last_name: "", role: "" });
+  const [deleteUserId, setDeleteUserId] = useState<number | null>(null);
   const queryClient = useQueryClient();
 
   const { data: users = [], isLoading } = useQuery({
@@ -33,14 +56,21 @@ const UserManagement = () => {
     queryFn: adminService.getPendingVerifiers,
   });
 
-  const banMutation = useMutation({
-    mutationFn: adminService.banUser,
-    onSuccess: () => queryClient.invalidateQueries({ queryKey: ["admin-users"] }),
+  const updateMutation = useMutation({
+    mutationFn: ({ id, data }: { id: number; data: { first_name?: string; last_name?: string; role?: string } }) =>
+      adminService.updateUser(id, data),
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ["admin-users"] });
+      setEditUser(null);
+    },
   });
 
-  const unbanMutation = useMutation({
-    mutationFn: adminService.unbanUser,
-    onSuccess: () => queryClient.invalidateQueries({ queryKey: ["admin-users"] }),
+  const deleteMutation = useMutation({
+    mutationFn: adminService.deleteUser,
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ["admin-users"] });
+      setDeleteUserId(null);
+    },
   });
 
   const approveMutation = useMutation({
@@ -70,6 +100,23 @@ const UserManagement = () => {
     u.user_name.toLowerCase().includes(search.toLowerCase()) ||
     [u.first_name, u.last_name].filter(Boolean).join(" ").toLowerCase().includes(search.toLowerCase())
   );
+
+  const openEdit = (u: User) => {
+    setEditUser(u);
+    setEditForm({ first_name: u.first_name ?? "", last_name: u.last_name ?? "", role: u.role });
+  };
+
+  const handleEditSave = () => {
+    if (!editUser) return;
+    updateMutation.mutate({
+      id: editUser.user_id,
+      data: {
+        first_name: editForm.first_name || undefined,
+        last_name: editForm.last_name || undefined,
+        role: editForm.role || undefined,
+      },
+    });
+  };
 
   return (
     <div className="flex min-h-screen">
@@ -116,7 +163,6 @@ const UserManagement = () => {
                   <TableBody>
                     {filtered.map((u) => {
                       const displayName = [u.first_name, u.last_name].filter(Boolean).join(" ") || u.user_name;
-                      const isBanned = !u.verified;
                       return (
                         <TableRow key={u.user_id}>
                           <TableCell>
@@ -143,16 +189,20 @@ const UserManagement = () => {
                                 <Button variant="ghost" size="icon"><MoreHorizontal className="h-4 w-4" /></Button>
                               </DropdownMenuTrigger>
                               <DropdownMenuContent align="end">
+                                <DropdownMenuItem onClick={() => openEdit(u)}>
+                                  <Pencil className="h-3.5 w-3.5 mr-2" />Edit User
+                                </DropdownMenuItem>
                                 <DropdownMenuItem
                                   onClick={() => u.verified ? unverifyMutation.mutate(u.user_id) : verifyMutation.mutate(u.user_id)}
                                 >
                                   {u.verified ? "Remove Verified" : "Verify User"}
                                 </DropdownMenuItem>
+                                <DropdownMenuSeparator />
                                 <DropdownMenuItem
                                   className="text-destructive"
-                                  onClick={() => isBanned ? unbanMutation.mutate(u.user_id) : banMutation.mutate(u.user_id)}
+                                  onClick={() => setDeleteUserId(u.user_id)}
                                 >
-                                  {isBanned ? "Unban User" : "Ban User"}
+                                  <Trash2 className="h-3.5 w-3.5 mr-2" />Delete User
                                 </DropdownMenuItem>
                               </DropdownMenuContent>
                             </DropdownMenu>
@@ -219,6 +269,76 @@ const UserManagement = () => {
           </TabsContent>
         </Tabs>
       </div>
+
+      {/* ── Edit User Dialog ─────────────────────────────────────────── */}
+      <Dialog open={!!editUser} onOpenChange={(open) => !open && setEditUser(null)}>
+        <DialogContent className="sm:max-w-md">
+          <DialogHeader>
+            <DialogTitle>Edit User</DialogTitle>
+          </DialogHeader>
+          <div className="space-y-4 py-2">
+            <div className="space-y-1.5">
+              <Label>First Name</Label>
+              <Input
+                value={editForm.first_name}
+                onChange={(e) => setEditForm((f) => ({ ...f, first_name: e.target.value }))}
+                placeholder="First name"
+              />
+            </div>
+            <div className="space-y-1.5">
+              <Label>Last Name</Label>
+              <Input
+                value={editForm.last_name}
+                onChange={(e) => setEditForm((f) => ({ ...f, last_name: e.target.value }))}
+                placeholder="Last name"
+              />
+            </div>
+            <div className="space-y-1.5">
+              <Label>Role</Label>
+              <Select value={editForm.role} onValueChange={(v) => setEditForm((f) => ({ ...f, role: v }))}>
+                <SelectTrigger>
+                  <SelectValue />
+                </SelectTrigger>
+                <SelectContent>
+                  <SelectItem value="TRADER">TRADER</SelectItem>
+                  <SelectItem value="VERIFIER">VERIFIER</SelectItem>
+                  <SelectItem value="ADMIN">ADMIN</SelectItem>
+                </SelectContent>
+              </Select>
+            </div>
+          </div>
+          <DialogFooter>
+            <Button variant="outline" onClick={() => setEditUser(null)}>Cancel</Button>
+            <Button onClick={handleEditSave} disabled={updateMutation.isPending}>
+              {updateMutation.isPending ? <Loader2 className="h-4 w-4 animate-spin mr-2" /> : null}
+              Save
+            </Button>
+          </DialogFooter>
+        </DialogContent>
+      </Dialog>
+
+      {/* ── Delete Confirmation ──────────────────────────────────────── */}
+      <AlertDialog open={deleteUserId !== null} onOpenChange={(open) => !open && setDeleteUserId(null)}>
+        <AlertDialogContent>
+          <AlertDialogHeader>
+            <AlertDialogTitle>Delete User</AlertDialogTitle>
+            <AlertDialogDescription>
+              This will permanently delete the user and all their data. This action cannot be undone.
+            </AlertDialogDescription>
+          </AlertDialogHeader>
+          <AlertDialogFooter>
+            <AlertDialogCancel>Cancel</AlertDialogCancel>
+            <AlertDialogAction
+              className="bg-destructive text-destructive-foreground hover:bg-destructive/90"
+              onClick={() => deleteUserId !== null && deleteMutation.mutate(deleteUserId)}
+              disabled={deleteMutation.isPending}
+            >
+              {deleteMutation.isPending ? <Loader2 className="h-4 w-4 animate-spin mr-2" /> : null}
+              Delete
+            </AlertDialogAction>
+          </AlertDialogFooter>
+        </AlertDialogContent>
+      </AlertDialog>
     </div>
   );
 };

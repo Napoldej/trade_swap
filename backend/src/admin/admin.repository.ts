@@ -60,6 +60,29 @@ export class AdminRepository {
     });
   }
 
+  async getAllItems() {
+    return this.databaseService.client.traderItem.findMany({
+      include: {
+        category: true,
+        photos: { orderBy: { display_order: 'asc' } },
+        trader: { include: { user: { select: { user_name: true, first_name: true, last_name: true } } } },
+      },
+      orderBy: { created_at: 'desc' },
+    });
+  }
+
+  async updateItem(itemId: number, data: { item_name?: string; description?: string; category_id?: number }) {
+    return this.databaseService.client.traderItem.update({
+      where: { item_id: itemId },
+      data,
+      include: { category: true, photos: true },
+    });
+  }
+
+  async deleteItem(itemId: number) {
+    return this.databaseService.client.traderItem.delete({ where: { item_id: itemId } });
+  }
+
   async getPendingVerifiers() {
     return this.databaseService.client.user.findMany({
       where: { role: 'VERIFIER', verified: false },

@@ -1,4 +1,4 @@
-import { Bell, MessageCircle, Search, ChevronDown, LayoutDashboard, ShieldCheck } from "lucide-react";
+import { Bell, MessageCircle, Search, ChevronDown, ShieldCheck } from "lucide-react";
 import { Link, useNavigate } from "react-router-dom";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
@@ -90,16 +90,8 @@ const Navbar = ({ roleBadge }: NavbarProps) => {
           {/* ADMIN nav */}
           {isAdmin && (
             <>
-              <Link to="/admin">
-                <Button variant="ghost" size="sm" className="gap-1.5">
-                  <LayoutDashboard className="h-4 w-4" />Dashboard
-                </Button>
-              </Link>
               <Link to="/admin/users">
                 <Button variant="ghost" size="sm">Users</Button>
-              </Link>
-              <Link to="/admin/categories">
-                <Button variant="ghost" size="sm">Categories</Button>
               </Link>
               <Link to="/admin/analytics">
                 <Button variant="ghost" size="sm">Analytics</Button>

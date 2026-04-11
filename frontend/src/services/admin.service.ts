@@ -1,5 +1,5 @@
 import { api } from '@/lib/api';
-import { AdminAnalytics, Category, User } from '@/types/api';
+import { AdminAnalytics, Category, TraderItem, User } from '@/types/api';
 
 export const adminService = {
   // ─── Users ──────────────────────────────────────────────────────────────────
@@ -8,16 +8,12 @@ export const adminService = {
     return api.get('/admin/users');
   },
 
-  banUser(id: number): Promise<User> {
-    return api.patch(`/admin/users/${id}/ban`);
+  updateUser(id: number, data: { first_name?: string; last_name?: string; role?: string }): Promise<User> {
+    return api.patch(`/admin/users/${id}`, data);
   },
 
-  unbanUser(id: number): Promise<User> {
-    return api.patch(`/admin/users/${id}/unban`);
-  },
-
-  promoteToVerifier(id: number): Promise<User> {
-    return api.patch(`/admin/users/${id}/role`);
+  deleteUser(id: number): Promise<void> {
+    return api.delete(`/admin/users/${id}`);
   },
 
   verifyUser(id: number): Promise<User> {
@@ -42,6 +38,20 @@ export const adminService = {
     return api.delete(`/admin/verifiers/${id}/reject`);
   },
 
+  // ─── Items ──────────────────────────────────────────────────────────────────
+
+  getAllItems(): Promise<TraderItem[]> {
+    return api.get('/admin/items');
+  },
+
+  updateItem(id: number, data: { item_name?: string; description?: string; category_id?: number }): Promise<TraderItem> {
+    return api.patch(`/admin/items/${id}`, data);
+  },
+
+  deleteItem(id: number): Promise<void> {
+    return api.delete(`/admin/items/${id}`);
+  },
+
   // ─── Analytics ──────────────────────────────────────────────────────────────
 
   getAnalytics(): Promise<AdminAnalytics> {
@@ -52,10 +62,6 @@ export const adminService = {
 
   createCategory(category_name: string): Promise<Category> {
     return api.post('/categories', { category_name });
-  },
-
-  updateCategory(id: number, category_name: string): Promise<Category> {
-    return api.patch(`/categories/${id}`, { category_name });
   },
 
   deleteCategory(id: number): Promise<void> {
