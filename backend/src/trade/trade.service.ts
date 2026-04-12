@@ -201,48 +201,26 @@ export class TradeService {
       return result;
     }
 
-    // Both confirmed — complete the trade
-    const result = await this.databaseService.client.$transaction(async (tx) => {
-      const itemIds = [trade.proposer_item_id, trade.receiver_item_id];
-
-      await tx.traderItem.updateMany({
-        where: { item_id: { in: itemIds } },
-        data: { is_available: false },
-      });
-
-      await tx.trade.updateMany({
-        where: {
-          trade_id: { not: tradeId },
-          status: 'PENDING',
-          OR: [
-            { proposer_item_id: { in: itemIds } },
-            { receiver_item_id: { in: itemIds } },
-          ],
-        },
-        data: { status: 'CANCELLED' },
-      });
-
-      return tx.trade.update({
-        where: { trade_id: tradeId },
-        data: {
-          status: 'COMPLETED',
-          completed_at: new Date(),
-          proposer_confirmed: true,
-          receiver_confirmed: true,
-        },
-        include: this.tradeRepository.tradeInclude,
-      });
+    // Both confirmed — move to AWAITING_VERIFICATION (verifier must confirm)
+    const result = await this.databaseService.client.trade.update({
+      where: { trade_id: tradeId },
+      data: {
+        status: 'AWAITING_VERIFICATION',
+        proposer_confirmed: true,
+        receiver_confirmed: true,
+      },
+      include: this.tradeRepository.tradeInclude,
     });
 
-    // Notify both parties
+    // Notify both parties that verification is pending
     await Promise.all([
       this.notificationService.notifyTrader(
         trade.proposer_id,
-        `Trade completed! "${trade.proposer_item.item_name}" ↔ "${trade.receiver_item.item_name}" has been successfully swapped.`,
+        `Both parties confirmed! Your trade for "${trade.proposer_item.item_name}" ↔ "${trade.receiver_item.item_name}" is now awaiting verifier review.`,
       ),
       this.notificationService.notifyTrader(
         trade.receiver_id,
-        `Trade completed! "${trade.proposer_item.item_name}" ↔ "${trade.receiver_item.item_name}" has been successfully swapped.`,
+        `Both parties confirmed! Your trade for "${trade.proposer_item.item_name}" ↔ "${trade.receiver_item.item_name}" is now awaiting verifier review.`,
       ),
     ]);
 

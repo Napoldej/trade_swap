@@ -11,11 +11,24 @@ import {
   HttpCode,
   HttpStatus,
 } from '@nestjs/common';
+import { IsNotEmpty, IsOptional, IsString } from 'class-validator';
 import { VerifierService } from './verifier.service';
 import { RejectItemDto } from './dto/reject-item.dto';
 import { AuthGuard } from '../auth/auth.guard';
 import { RolesGuard } from '../common/guards/roles.guard';
 import { Roles } from '../common/decorators/roles.decorator';
+
+class ConfirmTradeDto {
+  @IsOptional()
+  @IsString()
+  note?: string;
+}
+
+class RejectTradeDto {
+  @IsNotEmpty()
+  @IsString()
+  reason: string;
+}
 
 @Controller('verifier')
 @UseGuards(AuthGuard, RolesGuard)
@@ -56,5 +69,35 @@ export class VerifierController {
   @HttpCode(HttpStatus.NO_CONTENT)
   async removeItem(@Param('id', ParseIntPipe) id: number) {
     await this.verifierService.removeItem(id);
+  }
+
+  // ── Trade Verification ────────────────────────────────────────────────────────
+
+  @Get('trades/pending')
+  getPendingTrades() {
+    return this.verifierService.getPendingTrades();
+  }
+
+  @Get('trades/:id')
+  getTradeById(@Param('id', ParseIntPipe) id: number) {
+    return this.verifierService.getTradeById(id);
+  }
+
+  @Patch('trades/:id/confirm')
+  confirmTrade(
+    @Request() req: any,
+    @Param('id', ParseIntPipe) id: number,
+    @Body() dto: ConfirmTradeDto,
+  ) {
+    return this.verifierService.confirmTrade(id, req.user.userId, dto.note);
+  }
+
+  @Patch('trades/:id/reject')
+  rejectTradeVerification(
+    @Request() req: any,
+    @Param('id', ParseIntPipe) id: number,
+    @Body() dto: RejectTradeDto,
+  ) {
+    return this.verifierService.rejectTradeVerification(id, req.user.userId, dto.reason);
   }
 }

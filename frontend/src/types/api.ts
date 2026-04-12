@@ -2,7 +2,7 @@
 
 export type Role = 'TRADER' | 'VERIFIER' | 'ADMIN';
 export type ItemStatus = 'PENDING' | 'APPROVED' | 'REJECTED';
-export type TradeStatus = 'PENDING' | 'ACCEPTED' | 'REJECTED' | 'COMPLETED' | 'CANCELLED';
+export type TradeStatus = 'PENDING' | 'ACCEPTED' | 'REJECTED' | 'AWAITING_VERIFICATION' | 'COMPLETED' | 'CANCELLED';
 
 // ─── User & Auth ──────────────────────────────────────────────────────────────
 
@@ -109,6 +109,10 @@ export interface Trade {
   status: TradeStatus;
   proposer_confirmed: boolean;
   receiver_confirmed: boolean;
+  verified_by: number | null;
+  verification_note: string | null;
+  verified_at: string | null;
+  verification_rejected_reason: string | null;
   created_at: string;
   updated_at: string;
   completed_at: string | null;

@@ -60,7 +60,7 @@ const Navbar = ({ roleBadge }: NavbarProps) => {
       <div className="container mx-auto flex h-16 items-center justify-between px-4">
         {/* Logo */}
         <div className="flex items-center gap-6">
-          <Link to="/" className="flex items-center gap-2">
+          <Link to={user ? "/browse" : "/"} className="flex items-center gap-2">
             <div className="flex h-8 w-8 items-center justify-center rounded-lg gradient-primary">
               <span className="text-sm font-bold text-primary-foreground">T</span>
             </div>
@@ -101,16 +101,11 @@ const Navbar = ({ roleBadge }: NavbarProps) => {
 
           {/* VERIFIER nav */}
           {isVerifier && (
-            <>
-              <Link to="/verifier">
-                <Button variant="ghost" size="sm" className="gap-1.5">
-                  <ShieldCheck className="h-4 w-4" />Dashboard
-                </Button>
-              </Link>
-              <Link to="/verifier/reports">
-                <Button variant="ghost" size="sm">Reports</Button>
-              </Link>
-            </>
+            <Link to="/verifier/pending">
+              <Button variant="ghost" size="sm" className="gap-1.5">
+                <ShieldCheck className="h-4 w-4" />Dashboard
+              </Button>
+            </Link>
           )}
 
           {/* TRADER nav */}
@@ -182,10 +177,7 @@ const Navbar = ({ roleBadge }: NavbarProps) => {
                   </>
                 )}
                 {isVerifier && (
-                  <>
-                    <DropdownMenuItem asChild><Link to="/verifier">Verifier Dashboard</Link></DropdownMenuItem>
-                    <DropdownMenuItem asChild><Link to="/verifier/reports">Reports</Link></DropdownMenuItem>
-                  </>
+                  <DropdownMenuItem asChild><Link to="/verifier/pending">Verifier Dashboard</Link></DropdownMenuItem>
                 )}
                 {isTrader && (
                   <>

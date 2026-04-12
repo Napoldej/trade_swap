@@ -1,5 +1,5 @@
 import { api } from '@/lib/api';
-import { TraderItem } from '@/types/api';
+import { Trade, TraderItem } from '@/types/api';
 
 export const verifierService = {
   getPendingItems(): Promise<TraderItem[]> {
@@ -24,5 +24,22 @@ export const verifierService = {
 
   removeItem(id: number): Promise<void> {
     return api.delete(`/verifier/items/${id}`);
+  },
+
+  // Trade verification
+  getPendingTrades(): Promise<Trade[]> {
+    return api.get('/verifier/trades/pending');
+  },
+
+  getTradeById(id: number): Promise<Trade> {
+    return api.get(`/verifier/trades/${id}`);
+  },
+
+  confirmTrade(id: number, note?: string): Promise<Trade> {
+    return api.patch(`/verifier/trades/${id}/confirm`, { note });
+  },
+
+  rejectTrade(id: number, reason: string): Promise<Trade> {
+    return api.patch(`/verifier/trades/${id}/reject`, { reason });
   },
 };

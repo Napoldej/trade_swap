@@ -1,4 +1,4 @@
-import { ArrowLeftRight, MessageCircle, Flag, Check, Clock, Loader2 } from "lucide-react";
+import { ArrowLeftRight, MessageCircle, Flag, Check, Clock, Loader2, ShieldCheck } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
 import { Card, CardContent } from "@/components/ui/card";
@@ -10,7 +10,7 @@ import { tradesService } from "@/services/trades.service";
 import { useAuth } from "@/context/AuthContext";
 import { format } from "date-fns";
 
-const STEPS = ["Proposed", "Accepted", "Confirming", "Completed"];
+const STEPS = ["Proposed", "Accepted", "Confirming", "Verifier Review", "Completed"];
 
 const TradeDetail = () => {
   const { id } = useParams<{ id: string }>();
@@ -47,12 +47,14 @@ const TradeDetail = () => {
   const otherConfirmed = iAmProposer ? trade.receiver_confirmed : trade.proposer_confirmed;
   const anyConfirmed = trade.proposer_confirmed || trade.receiver_confirmed;
 
-  // Stepper logic: 0=Proposed, 1=Accepted, 2=Confirming, 3=Completed
+  // Stepper: 0=Proposed, 1=Accepted, 2=Confirming, 3=Verifier Review, 4=Completed
   let currentStep = 0;
   if (trade.status === "ACCEPTED") {
     currentStep = anyConfirmed ? 2 : 1;
-  } else if (trade.status === "COMPLETED") {
+  } else if (trade.status === "AWAITING_VERIFICATION") {
     currentStep = 3;
+  } else if (trade.status === "COMPLETED") {
+    currentStep = 4;
   } else if (trade.status === "PENDING") {
     currentStep = 0;
   }
@@ -66,8 +68,18 @@ const TradeDetail = () => {
 
   const timeline: { label: string; date: string }[] = [
     { label: "Proposed", date: format(new Date(trade.created_at), "MMM d, yyyy h:mm a") },
-    ...(trade.status !== "PENDING" ? [{ label: trade.status === "REJECTED" || trade.status === "CANCELLED" ? trade.status : "Accepted", date: format(new Date(trade.updated_at), "MMM d, yyyy h:mm a") }] : []),
-    ...(trade.completed_at ? [{ label: "Completed", date: format(new Date(trade.completed_at), "MMM d, yyyy h:mm a") }] : []),
+    ...(trade.status !== "PENDING"
+      ? [{ label: trade.status === "REJECTED" || trade.status === "CANCELLED" ? trade.status : "Accepted", date: format(new Date(trade.updated_at), "MMM d, yyyy h:mm a") }]
+      : []),
+    ...(trade.status === "AWAITING_VERIFICATION" || trade.status === "COMPLETED"
+      ? [{ label: "Awaiting Verification", date: format(new Date(trade.updated_at), "MMM d, yyyy h:mm a") }]
+      : []),
+    ...(trade.verified_at
+      ? [{ label: trade.status === "COMPLETED" ? "Verifier Confirmed" : "Verifier Rejected", date: format(new Date(trade.verified_at), "MMM d, yyyy h:mm a") }]
+      : []),
+    ...(trade.completed_at
+      ? [{ label: "Completed", date: format(new Date(trade.completed_at), "MMM d, yyyy h:mm a") }]
+      : []),
   ];
 
   return (
@@ -76,29 +88,49 @@ const TradeDetail = () => {
       <div className="container mx-auto px-4 py-8 max-w-4xl flex-1">
         <h1 className="text-3xl font-bold mb-6">Trade Details</h1>
 
-        {/* 4-step Stepper */}
-        <div className="flex items-center justify-center mb-10">
-          {STEPS.map((step, i) => (
-            <div key={step} className="flex items-center">
-              <div className="flex flex-col items-center">
-                <div className={`w-10 h-10 rounded-full flex items-center justify-center text-sm font-semibold ${
+        {/* 5-step Stepper */}
+        <div className="flex flex-col items-center mb-10">
+          {/* Circles + connectors row */}
+          <div className="flex items-center">
+            {STEPS.map((step, i) => (
+              <div key={step} className="flex items-center">
+                <div className={`w-10 h-10 rounded-full flex items-center justify-center text-sm font-semibold shrink-0 ${
                   i < currentStep ? "gradient-primary text-primary-foreground" :
                   i === currentStep ? "gradient-primary text-primary-foreground" :
                   "bg-muted text-muted-foreground"
                 }`}>
                   {i < currentStep ? <Check className="h-5 w-5" /> : i + 1}
                 </div>
-                <span className={`text-xs mt-2 ${i <= currentStep ? "text-primary font-medium" : "text-muted-foreground"}`}>{step}</span>
+                {i < STEPS.length - 1 && <div className={`w-12 h-0.5 mx-1 ${i < currentStep ? "bg-primary" : "bg-muted"}`} />}
               </div>
-              {i < STEPS.length - 1 && <div className={`w-16 h-0.5 mx-2 ${i < currentStep ? "bg-primary" : "bg-muted"}`} />}
-            </div>
-          ))}
+            ))}
+          </div>
+          {/* Labels row */}
+          <div className="flex items-start mt-2">
+            {STEPS.map((step, i) => (
+              <div key={step} className="flex items-center">
+                <span className={`text-xs text-center w-10 ${i <= currentStep ? "text-primary font-medium" : "text-muted-foreground"}`}>{step}</span>
+                {i < STEPS.length - 1 && <div className="w-14" />}
+              </div>
+            ))}
+          </div>
         </div>
 
         {/* Status badge for non-standard statuses */}
         {(trade.status === "REJECTED" || trade.status === "CANCELLED") && (
           <div className="flex justify-center mb-6">
             <Badge className="bg-destructive/10 text-destructive border-destructive/20 text-sm px-4 py-1">{trade.status}</Badge>
+          </div>
+        )}
+
+        {/* Awaiting Verification banner */}
+        {trade.status === "AWAITING_VERIFICATION" && (
+          <div className="rounded-lg bg-purple-50 border border-purple-200 px-5 py-4 mb-6 flex items-start gap-3">
+            <ShieldCheck className="h-5 w-5 text-purple-600 mt-0.5 shrink-0" />
+            <div>
+              <p className="text-sm font-semibold text-purple-800">Awaiting Verifier Review</p>
+              <p className="text-sm text-purple-700 mt-0.5">Both parties have confirmed. A verifier will review and complete this trade shortly.</p>
+            </div>
           </div>
         )}
 
@@ -171,6 +203,13 @@ const TradeDetail = () => {
           </div>
         )}
 
+        {/* Rejection reason (verifier rejected) */}
+        {trade.status === "REJECTED" && trade.verification_rejected_reason && (
+          <div className="rounded-lg bg-destructive/5 border border-destructive/20 px-4 py-3 text-sm text-destructive mb-6">
+            <span className="font-medium">Rejection reason:</span> {trade.verification_rejected_reason}
+          </div>
+        )}
+
         {/* Timeline */}
         <Card className="mb-6">
           <CardContent className="p-4">
@@ -209,6 +248,11 @@ const TradeDetail = () => {
             <Link to={`/chat?trade=${trade.trade_id}`}>
               <Button variant="outline"><MessageCircle className="h-4 w-4 mr-2" /> Open Chat</Button>
             </Link>
+          )}
+          {trade.status === "AWAITING_VERIFICATION" && (
+            <Button disabled variant="outline" className="text-purple-600 border-purple-200">
+              <ShieldCheck className="h-4 w-4 mr-2" /> Awaiting Verification
+            </Button>
           )}
           {trade.status === "COMPLETED" && (
             <Link to={`/rate-trade/${trade.trade_id}`}>

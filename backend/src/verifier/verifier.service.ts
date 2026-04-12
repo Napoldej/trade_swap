@@ -27,7 +27,6 @@ export class VerifierService {
 
     const result = await this.verifierRepository.approveItem(itemId, userId);
 
-    // Notify item owner
     await this.notificationService.notifyUser(
       item.trader.user_id,
       `Your item "${item.item_name}" has been approved and is now live on the marketplace!`,
@@ -47,7 +46,6 @@ export class VerifierService {
 
     const result = await this.verifierRepository.rejectItem(itemId, userId, dto.rejection_reason);
 
-    // Notify item owner
     await this.notificationService.notifyUser(
       item.trader.user_id,
       `Your item "${item.item_name}" was rejected. Reason: ${dto.rejection_reason}`,
@@ -64,5 +62,63 @@ export class VerifierService {
     if (!item) throw new NotFoundException('Item not found');
 
     return this.verifierRepository.removeItem(itemId);
+  }
+
+  // ── Trade Verification ────────────────────────────────────────────────────────
+
+  async getPendingTrades() {
+    return this.verifierRepository.getPendingTrades();
+  }
+
+  async getTradeById(tradeId: number) {
+    const trade = await this.verifierRepository.getTradeById(tradeId);
+    if (!trade) throw new NotFoundException('Trade not found');
+    if (trade.status !== 'AWAITING_VERIFICATION')
+      throw new BadRequestException('Trade is not awaiting verification');
+    return trade;
+  }
+
+  async confirmTrade(tradeId: number, userId: number, note?: string) {
+    const trade = await this.verifierRepository.getTradeById(tradeId);
+    if (!trade) throw new NotFoundException('Trade not found');
+    if (trade.status !== 'AWAITING_VERIFICATION')
+      throw new BadRequestException('Trade is not awaiting verification');
+
+    const result = await this.verifierRepository.confirmTrade(tradeId, userId, note);
+
+    await Promise.all([
+      this.notificationService.notifyTrader(
+        trade.proposer_id,
+        `Your trade for "${trade.proposer_item.item_name}" ↔ "${trade.receiver_item.item_name}" has been verified and completed! You can now rate each other.`,
+      ),
+      this.notificationService.notifyTrader(
+        trade.receiver_id,
+        `Your trade for "${trade.proposer_item.item_name}" ↔ "${trade.receiver_item.item_name}" has been verified and completed! You can now rate each other.`,
+      ),
+    ]);
+
+    return result;
+  }
+
+  async rejectTradeVerification(tradeId: number, userId: number, reason: string) {
+    const trade = await this.verifierRepository.getTradeById(tradeId);
+    if (!trade) throw new NotFoundException('Trade not found');
+    if (trade.status !== 'AWAITING_VERIFICATION')
+      throw new BadRequestException('Trade is not awaiting verification');
+
+    const result = await this.verifierRepository.rejectTradeVerification(tradeId, userId, reason);
+
+    await Promise.all([
+      this.notificationService.notifyTrader(
+        trade.proposer_id,
+        `Your trade verification was rejected. Reason: ${reason}`,
+      ),
+      this.notificationService.notifyTrader(
+        trade.receiver_id,
+        `Your trade verification was rejected. Reason: ${reason}`,
+      ),
+    ]);
+
+    return result;
   }
 }

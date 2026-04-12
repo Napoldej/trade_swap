@@ -13,9 +13,14 @@ import { format } from "date-fns";
 const statusStyles: Record<string, string> = {
   PENDING: "bg-warning/10 text-warning border-warning/20",
   ACCEPTED: "bg-info/10 text-info border-info/20",
+  AWAITING_VERIFICATION: "bg-purple-100 text-purple-700 border-purple-200",
   COMPLETED: "bg-success/10 text-success border-success/20",
   REJECTED: "bg-destructive/10 text-destructive border-destructive/20",
   CANCELLED: "bg-muted text-muted-foreground",
+};
+
+const statusLabels: Record<string, string> = {
+  AWAITING_VERIFICATION: "Awaiting Verification",
 };
 
 const MyTrades = () => {
@@ -51,6 +56,7 @@ const MyTrades = () => {
               <TabsTrigger value="all">All</TabsTrigger>
               <TabsTrigger value="pending">Pending</TabsTrigger>
               <TabsTrigger value="accepted">Accepted</TabsTrigger>
+              <TabsTrigger value="awaiting_verification">Verifying</TabsTrigger>
               <TabsTrigger value="completed">Completed</TabsTrigger>
               <TabsTrigger value="rejected">Rejected</TabsTrigger>
               <TabsTrigger value="cancelled">Cancelled</TabsTrigger>
@@ -83,7 +89,7 @@ const MyTrades = () => {
                           <p className="text-xs text-muted-foreground">with {otherUser ?? "Unknown"}</p>
                         </div>
                         <div className="flex flex-col items-end gap-1">
-                          <Badge className={statusStyles[trade.status]}>{trade.status.toLowerCase()}</Badge>
+                          <Badge className={statusStyles[trade.status]}>{statusLabels[trade.status] ?? trade.status.toLowerCase()}</Badge>
                           {trade.status === "ACCEPTED" && (() => {
                             const iConfirmed = iAmProposer ? trade.proposer_confirmed : trade.receiver_confirmed;
                             const otherConfirmed = iAmProposer ? trade.receiver_confirmed : trade.proposer_confirmed;

@@ -23,7 +23,8 @@ import EditItem from "./pages/EditItem";
 import Notifications from "./pages/Notifications";
 import VerifierDashboard from "./pages/verifier/VerifierDashboard";
 import VerifyItem from "./pages/verifier/VerifyItem";
-import VerifierReports from "./pages/verifier/VerifierReports";
+import VerifierTradeList from "./pages/verifier/VerifierTradeList";
+import VerifierTradeReview from "./pages/verifier/VerifierTradeReview";
 import AdminDashboard from "./pages/admin/AdminDashboard";
 import UserManagement from "./pages/admin/UserManagement";
 import AdminAnalytics from "./pages/admin/AdminAnalytics";
@@ -68,15 +69,14 @@ const App = () => (
           <Route path="/notifications" element={<Notifications />} />
           <Route path="/verifier" element={<VerifierDashboard />} />
           <Route path="/verifier/review/:id" element={<VerifyItem />} />
-          <Route path="/verifier/reports" element={<VerifierReports />} />
+          <Route path="/verifier/trades" element={<VerifierTradeList />} />
+          <Route path="/verifier/trades/:id" element={<VerifierTradeReview />} />
           <Route path="/verifier/pending" element={<VerifierDashboard />} />
-          <Route path="/verifier/flagged" element={<VerifierDashboard />} />
           <Route path="/admin" element={<AdminDashboard />} />
           <Route path="/admin/users" element={<UserManagement />} />
           <Route path="/admin/analytics" element={<AdminAnalytics />} />
           <Route path="/admin/items" element={<AdminItemReview />} />
           <Route path="/admin/manage-items" element={<AdminItemManagement />} />
-          <Route path="/admin/reports" element={<VerifierReports />} />
           <Route path="*" element={<NotFound />} />
         </Routes>
       </BrowserRouter>
