@@ -46,6 +46,44 @@ export class TradeRepository {
     });
   }
 
+  async acceptAndCancelConflicts(tradeId: number, proposerItemId: number, receiverItemId: number) {
+    const itemIds = [proposerItemId, receiverItemId];
+    return this.databaseService.client.$transaction(async (tx) => {
+      await tx.trade.updateMany({
+        where: {
+          trade_id: { not: tradeId },
+          status: 'PENDING',
+          OR: [
+            { proposer_item_id: { in: itemIds } },
+            { receiver_item_id: { in: itemIds } },
+          ],
+        },
+        data: { status: 'CANCELLED' },
+      });
+      return tx.trade.update({
+        where: { trade_id: tradeId },
+        data: { status: 'ACCEPTED' },
+        include: this.tradeInclude,
+      });
+    });
+  }
+
+  async partialConfirm(tradeId: number, proposerConfirmed: boolean, receiverConfirmed: boolean) {
+    return this.databaseService.client.trade.update({
+      where: { trade_id: tradeId },
+      data: { proposer_confirmed: proposerConfirmed, receiver_confirmed: receiverConfirmed },
+      include: this.tradeInclude,
+    });
+  }
+
+  async submitForVerification(tradeId: number) {
+    return this.databaseService.client.trade.update({
+      where: { trade_id: tradeId },
+      data: { status: 'AWAITING_VERIFICATION', proposer_confirmed: true, receiver_confirmed: true },
+      include: this.tradeInclude,
+    });
+  }
+
   async updateStatus(id: number, status: TradeStatus, completedAt?: Date) {
     return this.databaseService.client.trade.update({
       where: { trade_id: id },
