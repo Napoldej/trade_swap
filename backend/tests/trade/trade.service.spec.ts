@@ -2,44 +2,64 @@ import { Test, TestingModule } from '@nestjs/testing';
 import { NotFoundException, ForbiddenException, BadRequestException } from '@nestjs/common';
 import { TradeService } from 'src/trade/trade.service';
 import { TradeRepository } from 'src/trade/trade.repository';
-import { DatabaseService } from 'src/database/database.service';
+import { TradeGuardService } from 'src/trade/trade.guard.service';
+import { TradeProposalGuard } from 'src/trade/trade-proposal.guard';
+import { NotificationService } from 'src/notification/notification.service';
 
 const mockTradeRepository = {
   create: jest.fn(),
   findById: jest.fn(),
   findByTrader: jest.fn(),
   updateStatus: jest.fn(),
+  acceptAndCancelConflicts: jest.fn(),
+  partialConfirm: jest.fn(),
+  submitForVerification: jest.fn(),
+};
+
+const mockTradeGuardService = {
+  assertIsParticipant: jest.fn(),
+  assertCanAccept: jest.fn(),
+  assertCanReject: jest.fn(),
+  assertCanCancel: jest.fn(),
+  assertCanComplete: jest.fn(),
+  getTradeOrThrow: jest.fn(),
+};
+
+const mockTradeProposalGuard = {
+  getTraderByUserId: jest.fn(),
+  validateProposalItems: jest.fn(),
+  checkNoAcceptedConflict: jest.fn(),
+  getReceiverOrThrow: jest.fn(),
+};
+
+const mockNotificationService = {
+  notifyTrader: jest.fn().mockResolvedValue(undefined),
 };
 
 const mockTrader = { trader_id: 10, user_id: 1 };
 const mockOtherTrader = { trader_id: 20, user_id: 2 };
 
-const approvedItem = (id: number, traderId: number) => ({
+const approvedItem = (id: number, traderId: number, name = 'Item') => ({
   item_id: id,
   trader_id: traderId,
+  item_name: name,
   status: 'APPROVED',
   is_available: true,
 });
 
-const makeTrade = (status: string) => ({
+const makeTrade = (status: string, extra: Record<string, unknown> = {}) => ({
   trade_id: 1,
   proposer_id: 10,
   receiver_id: 20,
   proposer_item_id: 101,
   receiver_item_id: 201,
+  proposer_item: approvedItem(101, 10, 'Item A'),
+  receiver_item: approvedItem(201, 20, 'Item B'),
+  proposer_confirmed: false,
+  receiver_confirmed: false,
   status,
+  ...extra,
 });
-
-const mockDatabaseService = {
-  client: {
-    trader: {
-      findUnique: jest.fn(),
-    },
-    traderItem: {
-      findUnique: jest.fn(),
-    },
-  },
-};
 
 describe('TradeService', () => {
   let service: TradeService;
@@ -49,12 +69,15 @@ describe('TradeService', () => {
       providers: [
         TradeService,
         { provide: TradeRepository, useValue: mockTradeRepository },
-        { provide: DatabaseService, useValue: mockDatabaseService },
+        { provide: TradeGuardService, useValue: mockTradeGuardService },
+        { provide: TradeProposalGuard, useValue: mockTradeProposalGuard },
+        { provide: NotificationService, useValue: mockNotificationService },
       ],
     }).compile();
 
     service = module.get<TradeService>(TradeService);
     jest.clearAllMocks();
+    mockNotificationService.notifyTrader.mockResolvedValue(undefined);
   });
 
   // ─── proposeTrade ─────────────────────────────────────────────────────────────
@@ -63,12 +86,13 @@ describe('TradeService', () => {
     const dto = { proposerItemId: 101, receiverItemId: 201, receiverId: 20 };
 
     it('creates a trade when both items are APPROVED and proposer owns their item', async () => {
-      mockDatabaseService.client.trader.findUnique
-        .mockResolvedValueOnce(mockTrader)          // proposer lookup
-        .mockResolvedValueOnce(mockOtherTrader);    // receiver lookup
-      mockDatabaseService.client.traderItem.findUnique
-        .mockResolvedValueOnce(approvedItem(101, 10))  // proposer item
-        .mockResolvedValueOnce(approvedItem(201, 20)); // receiver item
+      mockTradeProposalGuard.getTraderByUserId.mockResolvedValue(mockTrader);
+      mockTradeProposalGuard.validateProposalItems.mockResolvedValue({
+        proposerItem: approvedItem(101, 10, 'Item A'),
+        receiverItem: approvedItem(201, 20, 'Item B'),
+      });
+      mockTradeProposalGuard.checkNoAcceptedConflict.mockResolvedValue(undefined);
+      mockTradeProposalGuard.getReceiverOrThrow.mockResolvedValue(mockOtherTrader);
       mockTradeRepository.create.mockResolvedValue(makeTrade('PENDING'));
 
       const result = await service.proposeTrade(1, dto);
@@ -78,40 +102,42 @@ describe('TradeService', () => {
     });
 
     it('throws BadRequestException if proposer item is not APPROVED', async () => {
-      mockDatabaseService.client.trader.findUnique.mockResolvedValue(mockTrader);
-      mockDatabaseService.client.traderItem.findUnique.mockResolvedValueOnce({
-        ...approvedItem(101, 10),
-        status: 'PENDING',
-      });
+      mockTradeProposalGuard.getTraderByUserId.mockResolvedValue(mockTrader);
+      mockTradeProposalGuard.validateProposalItems.mockRejectedValue(
+        new BadRequestException('Proposer item is not APPROVED'),
+      );
 
       await expect(service.proposeTrade(1, dto)).rejects.toThrow(BadRequestException);
     });
 
     it('throws ForbiddenException if proposer does not own the proposer item', async () => {
-      mockDatabaseService.client.trader.findUnique.mockResolvedValue(mockTrader);
-      mockDatabaseService.client.traderItem.findUnique.mockResolvedValueOnce(
-        approvedItem(101, 99), // owned by someone else
+      mockTradeProposalGuard.getTraderByUserId.mockResolvedValue(mockTrader);
+      mockTradeProposalGuard.validateProposalItems.mockRejectedValue(
+        new ForbiddenException('You do not own this item'),
       );
 
       await expect(service.proposeTrade(1, dto)).rejects.toThrow(ForbiddenException);
     });
 
     it('throws BadRequestException if receiver item is not APPROVED', async () => {
-      mockDatabaseService.client.trader.findUnique.mockResolvedValue(mockTrader);
-      mockDatabaseService.client.traderItem.findUnique
-        .mockResolvedValueOnce(approvedItem(101, 10))
-        .mockResolvedValueOnce({ ...approvedItem(201, 20), status: 'PENDING' });
+      mockTradeProposalGuard.getTraderByUserId.mockResolvedValue(mockTrader);
+      mockTradeProposalGuard.validateProposalItems.mockRejectedValue(
+        new BadRequestException('Receiver item is not APPROVED'),
+      );
 
       await expect(service.proposeTrade(1, dto)).rejects.toThrow(BadRequestException);
     });
 
     it('throws NotFoundException if receiver trader does not exist', async () => {
-      mockDatabaseService.client.trader.findUnique
-        .mockResolvedValueOnce(mockTrader)
-        .mockResolvedValueOnce(null); // receiver not found
-      mockDatabaseService.client.traderItem.findUnique
-        .mockResolvedValueOnce(approvedItem(101, 10))
-        .mockResolvedValueOnce(approvedItem(201, 20));
+      mockTradeProposalGuard.getTraderByUserId.mockResolvedValue(mockTrader);
+      mockTradeProposalGuard.validateProposalItems.mockResolvedValue({
+        proposerItem: approvedItem(101, 10, 'Item A'),
+        receiverItem: approvedItem(201, 20, 'Item B'),
+      });
+      mockTradeProposalGuard.checkNoAcceptedConflict.mockResolvedValue(undefined);
+      mockTradeProposalGuard.getReceiverOrThrow.mockRejectedValue(
+        new NotFoundException('Receiver not found'),
+      );
 
       await expect(service.proposeTrade(1, dto)).rejects.toThrow(NotFoundException);
     });
@@ -121,33 +147,38 @@ describe('TradeService', () => {
 
   describe('acceptTrade', () => {
     it('receiver can accept a PENDING trade', async () => {
-      mockDatabaseService.client.trader.findUnique.mockResolvedValue(mockOtherTrader);
-      mockTradeRepository.findById.mockResolvedValue(makeTrade('PENDING'));
-      mockTradeRepository.updateStatus.mockResolvedValue(makeTrade('ACCEPTED'));
+      mockTradeGuardService.assertCanAccept.mockResolvedValue({
+        trader: mockOtherTrader,
+        trade: makeTrade('PENDING'),
+      });
+      mockTradeRepository.acceptAndCancelConflicts.mockResolvedValue(makeTrade('ACCEPTED'));
 
       const result = await service.acceptTrade(2, 1);
 
-      expect(mockTradeRepository.updateStatus).toHaveBeenCalledWith(1, 'ACCEPTED');
+      expect(mockTradeRepository.acceptAndCancelConflicts).toHaveBeenCalledWith(1, 101, 201);
       expect(result.status).toBe('ACCEPTED');
     });
 
     it('throws ForbiddenException if caller is not the receiver', async () => {
-      mockDatabaseService.client.trader.findUnique.mockResolvedValue(mockTrader); // proposer, not receiver
-      mockTradeRepository.findById.mockResolvedValue(makeTrade('PENDING'));
+      mockTradeGuardService.assertCanAccept.mockRejectedValue(
+        new ForbiddenException('Only the receiver can accept this trade'),
+      );
 
       await expect(service.acceptTrade(1, 1)).rejects.toThrow(ForbiddenException);
     });
 
     it('throws BadRequestException if trade is not PENDING', async () => {
-      mockDatabaseService.client.trader.findUnique.mockResolvedValue(mockOtherTrader);
-      mockTradeRepository.findById.mockResolvedValue(makeTrade('ACCEPTED'));
+      mockTradeGuardService.assertCanAccept.mockRejectedValue(
+        new BadRequestException('Trade is not in PENDING status'),
+      );
 
       await expect(service.acceptTrade(2, 1)).rejects.toThrow(BadRequestException);
     });
 
     it('throws NotFoundException if trade does not exist', async () => {
-      mockDatabaseService.client.trader.findUnique.mockResolvedValue(mockOtherTrader);
-      mockTradeRepository.findById.mockResolvedValue(null);
+      mockTradeGuardService.assertCanAccept.mockRejectedValue(
+        new NotFoundException('Trade not found'),
+      );
 
       await expect(service.acceptTrade(2, 999)).rejects.toThrow(NotFoundException);
     });
@@ -157,8 +188,10 @@ describe('TradeService', () => {
 
   describe('rejectTrade', () => {
     it('receiver can reject a PENDING trade', async () => {
-      mockDatabaseService.client.trader.findUnique.mockResolvedValue(mockOtherTrader);
-      mockTradeRepository.findById.mockResolvedValue(makeTrade('PENDING'));
+      mockTradeGuardService.assertCanReject.mockResolvedValue({
+        trader: mockOtherTrader,
+        trade: makeTrade('PENDING'),
+      });
       mockTradeRepository.updateStatus.mockResolvedValue(makeTrade('REJECTED'));
 
       const result = await service.rejectTrade(2, 1);
@@ -168,15 +201,17 @@ describe('TradeService', () => {
     });
 
     it('throws ForbiddenException if caller is not the receiver', async () => {
-      mockDatabaseService.client.trader.findUnique.mockResolvedValue(mockTrader);
-      mockTradeRepository.findById.mockResolvedValue(makeTrade('PENDING'));
+      mockTradeGuardService.assertCanReject.mockRejectedValue(
+        new ForbiddenException('Only the receiver can reject this trade'),
+      );
 
       await expect(service.rejectTrade(1, 1)).rejects.toThrow(ForbiddenException);
     });
 
     it('throws BadRequestException if trade is not PENDING', async () => {
-      mockDatabaseService.client.trader.findUnique.mockResolvedValue(mockOtherTrader);
-      mockTradeRepository.findById.mockResolvedValue(makeTrade('CANCELLED'));
+      mockTradeGuardService.assertCanReject.mockRejectedValue(
+        new BadRequestException('Trade is not in PENDING status'),
+      );
 
       await expect(service.rejectTrade(2, 1)).rejects.toThrow(BadRequestException);
     });
@@ -186,8 +221,10 @@ describe('TradeService', () => {
 
   describe('cancelTrade', () => {
     it('proposer can cancel a PENDING trade', async () => {
-      mockDatabaseService.client.trader.findUnique.mockResolvedValue(mockTrader);
-      mockTradeRepository.findById.mockResolvedValue(makeTrade('PENDING'));
+      mockTradeGuardService.assertCanCancel.mockResolvedValue({
+        trader: mockTrader,
+        trade: makeTrade('PENDING'),
+      });
       mockTradeRepository.updateStatus.mockResolvedValue(makeTrade('CANCELLED'));
 
       await service.cancelTrade(1, 1);
@@ -195,26 +232,26 @@ describe('TradeService', () => {
       expect(mockTradeRepository.updateStatus).toHaveBeenCalledWith(1, 'CANCELLED');
     });
 
-    it('proposer can cancel an ACCEPTED trade', async () => {
-      mockDatabaseService.client.trader.findUnique.mockResolvedValue(mockTrader);
-      mockTradeRepository.findById.mockResolvedValue(makeTrade('ACCEPTED'));
-      mockTradeRepository.updateStatus.mockResolvedValue(makeTrade('CANCELLED'));
+    it('throws BadRequestException if trade is ACCEPTED (only PENDING can be cancelled)', async () => {
+      mockTradeGuardService.assertCanCancel.mockRejectedValue(
+        new BadRequestException('Only PENDING trades can be cancelled'),
+      );
 
-      await service.cancelTrade(1, 1);
-
-      expect(mockTradeRepository.updateStatus).toHaveBeenCalledWith(1, 'CANCELLED');
+      await expect(service.cancelTrade(1, 1)).rejects.toThrow(BadRequestException);
     });
 
     it('throws ForbiddenException if caller is not the proposer', async () => {
-      mockDatabaseService.client.trader.findUnique.mockResolvedValue(mockOtherTrader);
-      mockTradeRepository.findById.mockResolvedValue(makeTrade('PENDING'));
+      mockTradeGuardService.assertCanCancel.mockRejectedValue(
+        new ForbiddenException('Only the proposer can cancel this trade'),
+      );
 
       await expect(service.cancelTrade(2, 1)).rejects.toThrow(ForbiddenException);
     });
 
     it('throws BadRequestException if trade is already COMPLETED or REJECTED', async () => {
-      mockDatabaseService.client.trader.findUnique.mockResolvedValue(mockTrader);
-      mockTradeRepository.findById.mockResolvedValue(makeTrade('COMPLETED'));
+      mockTradeGuardService.assertCanCancel.mockRejectedValue(
+        new BadRequestException('Only PENDING trades can be cancelled'),
+      );
 
       await expect(service.cancelTrade(1, 1)).rejects.toThrow(BadRequestException);
     });
@@ -223,38 +260,52 @@ describe('TradeService', () => {
   // ─── completeTrade ────────────────────────────────────────────────────────────
 
   describe('completeTrade', () => {
-    it('proposer can complete an ACCEPTED trade', async () => {
-      mockDatabaseService.client.trader.findUnique.mockResolvedValue(mockTrader);
-      mockTradeRepository.findById.mockResolvedValue(makeTrade('ACCEPTED'));
-      mockTradeRepository.updateStatus.mockResolvedValue(makeTrade('COMPLETED'));
+    it('proposer confirms — waits for receiver (partial confirm)', async () => {
+      mockTradeGuardService.assertCanComplete.mockResolvedValue({
+        trade: makeTrade('ACCEPTED'),
+        isProposer: true,
+        newProposerConfirmed: true,
+        newReceiverConfirmed: false,
+        bothConfirmed: false,
+      });
+      mockTradeRepository.partialConfirm.mockResolvedValue(
+        makeTrade('ACCEPTED', { proposer_confirmed: true }),
+      );
 
-      const result = await service.completeTrade(1, 1);
+      await service.completeTrade(1, 1);
 
-      expect(mockTradeRepository.updateStatus).toHaveBeenCalledWith(1, 'COMPLETED', expect.any(Date));
-      expect(result.status).toBe('COMPLETED');
+      expect(mockTradeRepository.partialConfirm).toHaveBeenCalledWith(1, true, false);
     });
 
-    it('receiver can complete an ACCEPTED trade', async () => {
-      mockDatabaseService.client.trader.findUnique.mockResolvedValue(mockOtherTrader);
-      mockTradeRepository.findById.mockResolvedValue(makeTrade('ACCEPTED'));
-      mockTradeRepository.updateStatus.mockResolvedValue(makeTrade('COMPLETED'));
+    it('receiver can complete an ACCEPTED trade (both confirmed)', async () => {
+      mockTradeGuardService.assertCanComplete.mockResolvedValue({
+        trade: makeTrade('ACCEPTED', { proposer_confirmed: true }),
+        isProposer: false,
+        newProposerConfirmed: true,
+        newReceiverConfirmed: true,
+        bothConfirmed: true,
+      });
+      mockTradeRepository.submitForVerification.mockResolvedValue(
+        makeTrade('PENDING_VERIFICATION'),
+      );
 
       await service.completeTrade(2, 1);
 
-      expect(mockTradeRepository.updateStatus).toHaveBeenCalledWith(1, 'COMPLETED', expect.any(Date));
+      expect(mockTradeRepository.submitForVerification).toHaveBeenCalledWith(1);
     });
 
     it('throws BadRequestException if trade is still PENDING (not yet accepted)', async () => {
-      mockDatabaseService.client.trader.findUnique.mockResolvedValue(mockTrader);
-      mockTradeRepository.findById.mockResolvedValue(makeTrade('PENDING'));
+      mockTradeGuardService.assertCanComplete.mockRejectedValue(
+        new BadRequestException('Trade must be ACCEPTED before completing'),
+      );
 
       await expect(service.completeTrade(1, 1)).rejects.toThrow(BadRequestException);
     });
 
     it('throws ForbiddenException if caller is not part of the trade', async () => {
-      const outsider = { trader_id: 99, user_id: 5 };
-      mockDatabaseService.client.trader.findUnique.mockResolvedValue(outsider);
-      mockTradeRepository.findById.mockResolvedValue(makeTrade('ACCEPTED'));
+      mockTradeGuardService.assertCanComplete.mockRejectedValue(
+        new ForbiddenException('You are not part of this trade'),
+      );
 
       await expect(service.completeTrade(5, 1)).rejects.toThrow(ForbiddenException);
     });
@@ -264,8 +315,10 @@ describe('TradeService', () => {
 
   describe('getTradeById', () => {
     it('returns trade when caller is a participant', async () => {
-      mockDatabaseService.client.trader.findUnique.mockResolvedValue(mockTrader);
-      mockTradeRepository.findById.mockResolvedValue(makeTrade('PENDING'));
+      mockTradeGuardService.assertIsParticipant.mockResolvedValue({
+        trader: mockTrader,
+        trade: makeTrade('PENDING'),
+      });
 
       const result = await service.getTradeById(1, 1);
 
@@ -273,9 +326,9 @@ describe('TradeService', () => {
     });
 
     it('throws ForbiddenException when caller is not part of the trade', async () => {
-      const outsider = { trader_id: 99, user_id: 5 };
-      mockDatabaseService.client.trader.findUnique.mockResolvedValue(outsider);
-      mockTradeRepository.findById.mockResolvedValue(makeTrade('PENDING'));
+      mockTradeGuardService.assertIsParticipant.mockRejectedValue(
+        new ForbiddenException('You are not part of this trade'),
+      );
 
       await expect(service.getTradeById(5, 1)).rejects.toThrow(ForbiddenException);
     });

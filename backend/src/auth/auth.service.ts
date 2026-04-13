@@ -42,7 +42,7 @@ export class AuthService {
       last_name: dto.last_name,
       email: dto.email,
       role,
-      verified: false,
+      verified: !isVerifier,
     });
 
     if (!user) {

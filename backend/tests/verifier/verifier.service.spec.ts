@@ -3,9 +3,10 @@ import { NotFoundException, BadRequestException } from '@nestjs/common';
 import { VerifierService } from 'src/verifier/verifier.service';
 import { VerifierRepository } from 'src/verifier/verifier.repository';
 import { DatabaseService } from 'src/database/database.service';
+import { NotificationService } from 'src/notification/notification.service';
 
 const mockVerifierRepository = {
-  getPendingItems: jest.fn(),
+  getItemsByStatus: jest.fn(),
   approveItem: jest.fn(),
   rejectItem: jest.fn(),
   removeItem: jest.fn(),
@@ -19,8 +20,13 @@ const mockDatabaseService = {
   },
 };
 
-const pendingItem = { item_id: 1, status: 'PENDING', trader_id: 10 };
-const approvedItem = { item_id: 2, status: 'APPROVED', trader_id: 10 };
+const mockNotificationService = {
+  notifyTrader: jest.fn().mockResolvedValue(undefined),
+  notifyUser: jest.fn().mockResolvedValue(undefined),
+};
+
+const pendingItem = { item_id: 1, item_name: 'Old Book', status: 'PENDING', trader_id: 10, trader: { user_id: 100 } };
+const approvedItem = { item_id: 2, item_name: 'Sneakers', status: 'APPROVED', trader_id: 10, trader: { user_id: 100 } };
 
 describe('VerifierService', () => {
   let service: VerifierService;
@@ -31,6 +37,7 @@ describe('VerifierService', () => {
         VerifierService,
         { provide: VerifierRepository, useValue: mockVerifierRepository },
         { provide: DatabaseService, useValue: mockDatabaseService },
+        { provide: NotificationService, useValue: mockNotificationService },
       ],
     }).compile();
 
@@ -42,11 +49,11 @@ describe('VerifierService', () => {
 
   describe('getPendingItems', () => {
     it('returns all PENDING items for verifier review', async () => {
-      mockVerifierRepository.getPendingItems.mockResolvedValue([pendingItem]);
+      mockVerifierRepository.getItemsByStatus.mockResolvedValue([pendingItem]);
 
-      const result = await service.getPendingItems();
+      const result = await service.getItemsByStatus('PENDING');
 
-      expect(mockVerifierRepository.getPendingItems).toHaveBeenCalled();
+      expect(mockVerifierRepository.getItemsByStatus).toHaveBeenCalledWith('PENDING');
       expect(result).toHaveLength(1);
       expect(result[0].status).toBe('PENDING');
     });
@@ -99,7 +106,7 @@ describe('VerifierService', () => {
         rejection_reason: 'Stock image used',
       });
 
-      const result = await service.rejectItem(1, 5, { rejectionReason: 'Stock image used' });
+      const result = await service.rejectItem(1, 5, { rejection_reason: 'Stock image used' });
 
       expect(mockVerifierRepository.rejectItem).toHaveBeenCalledWith(1, 5, 'Stock image used');
       expect(result.status).toBe('REJECTED');
@@ -110,7 +117,7 @@ describe('VerifierService', () => {
       mockDatabaseService.client.traderItem.findUnique.mockResolvedValue(null);
 
       await expect(
-        service.rejectItem(999, 5, { rejectionReason: 'Bad item' }),
+        service.rejectItem(999, 5, { rejection_reason: 'Bad item' }),
       ).rejects.toThrow(NotFoundException);
     });
 
@@ -118,7 +125,7 @@ describe('VerifierService', () => {
       mockDatabaseService.client.traderItem.findUnique.mockResolvedValue(approvedItem);
 
       await expect(
-        service.rejectItem(2, 5, { rejectionReason: 'Too late' }),
+        service.rejectItem(2, 5, { rejection_reason: 'Too late' }),
       ).rejects.toThrow(BadRequestException);
     });
   });

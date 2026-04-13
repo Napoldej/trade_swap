@@ -8,6 +8,7 @@ const mockChatRepository = {
   findConversationByTrade: jest.fn(),
   getMessages: jest.fn(),
   sendMessage: jest.fn(),
+  markRead: jest.fn().mockResolvedValue(undefined),
 };
 
 const mockTrader = { trader_id: 10, user_id: 1 };

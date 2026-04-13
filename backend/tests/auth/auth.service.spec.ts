@@ -22,6 +22,7 @@ const mockDatabaseService = {
   client: {
     trader: {
       create: jest.fn(),
+      findUnique: jest.fn().mockResolvedValue({ trader_id: 1 }),
     },
   },
 };

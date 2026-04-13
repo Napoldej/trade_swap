@@ -72,8 +72,8 @@ export class ItemService {
     return this.itemRepository.delete(itemId);
   }
 
-  async addPhoto(userId: number, itemId: number, photoUrl: string, displayOrder: number) {
+  async addPhoto(userId: number, itemId: number, dto: { photoUrl: string; displayOrder: number }) {
     await this.getItemAndVerifyOwnership(userId, itemId);
-    return this.itemRepository.addPhoto(itemId, photoUrl, displayOrder);
+    return this.itemRepository.addPhoto(itemId, dto.photoUrl, dto.displayOrder);
   }
 }

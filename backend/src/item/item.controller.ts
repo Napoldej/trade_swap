@@ -101,6 +101,6 @@ export class ItemController {
     const photoUrl = await this.s3Service.uploadFile(file, 'items');
     const order = displayOrder ? parseInt(displayOrder, 10) : 0;
 
-    return this.itemService.addPhoto(req.user.userId, id, photoUrl, order);
+    return this.itemService.addPhoto(req.user.userId, id, { photoUrl, displayOrder: order });
   }
 }
