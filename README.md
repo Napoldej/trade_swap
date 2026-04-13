@@ -266,20 +266,28 @@ npm run dev                 # starts on http://localhost:8080
 
 ### Default Accounts
 
-Add these variables to `backend/.env` before seeding:
+Before seeding, make sure:
 
-```env
-ADMIN_USER_NAME=admin
-ADMIN_EMAIL=admin@example.com
-ADMIN_PASSWORD=your-secure-password
-```
-
-Then run the seed script once:
-
-```bash
-cd backend
-npm run seed
-```
+1. **PostgreSQL is running** (locally or via Docker)
+2. **`backend/.env` exists** — copy from `.env.example` and fill in your values:
+   ```env
+   DATABASE_URL=postgresql://user:password@localhost:5432/tradeswap
+   ADMIN_USER_NAME=admin
+   ADMIN_EMAIL=admin@example.com
+   ADMIN_PASSWORD=your-secure-password
+   ```
+3. **Dependencies are installed:**
+   ```bash
+   cd backend && npm install
+   ```
+4. **Database is migrated** (tables must exist before seeding):
+   ```bash
+   npx prisma migrate deploy
+   ```
+5. **Run the seed script once:**
+   ```bash
+   npm run seed
+   ```
 
 The script is idempotent — if an admin already exists it will skip silently. After that, use the Admin panel to promote other users to Verifier.
 
