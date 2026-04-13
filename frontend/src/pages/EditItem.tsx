@@ -1,6 +1,6 @@
-import { useState, useEffect } from "react";
+import { useRef, useState, useEffect } from "react";
 import { useParams, useNavigate } from "react-router-dom";
-import { Loader2, Info } from "lucide-react";
+import { Loader2, Info, X, ImagePlus } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
@@ -13,14 +13,22 @@ import { categoriesService } from "@/services/categories.service";
 import { itemsService } from "@/services/items.service";
 import { ApiException } from "@/lib/api";
 
+const MAX_FILES = 5;
+const MAX_SIZE_MB = 5;
+
 const EditItem = () => {
   const { id } = useParams<{ id: string }>();
   const navigate = useNavigate();
   const queryClient = useQueryClient();
+  const fileInputRef = useRef<HTMLInputElement>(null);
 
   const [form, setForm] = useState({ item_name: "", category_id: "", description: "" });
   const [error, setError] = useState("");
   const [ready, setReady] = useState(false);
+  const [newFiles, setNewFiles] = useState<File[]>([]);
+  const [newPreviews, setNewPreviews] = useState<string[]>([]);
+  const [deletedPhotoIds, setDeletedPhotoIds] = useState<number[]>([]);
+  const [uploadingPhotos, setUploadingPhotos] = useState(false);
 
   const { data: item, isLoading: itemLoading } = useQuery({
     queryKey: ["my-item", id],
@@ -48,27 +56,73 @@ const EditItem = () => {
   const updateMutation = useMutation({
     mutationFn: (dto: { itemName?: string; categoryId?: number; description?: string }) =>
       itemsService.update(Number(id), dto),
-    onSuccess: () => {
-      queryClient.invalidateQueries({ queryKey: ["my-items"] });
-      queryClient.invalidateQueries({ queryKey: ["my-item", id] });
-      navigate("/my-items");
-    },
-    onError: (err) => {
-      setError(err instanceof ApiException ? err.message : "Failed to update item.");
-    },
   });
 
-  const handleSubmit = (e: React.FormEvent) => {
+  const handleFileChange = (e: React.ChangeEvent<HTMLInputElement>) => {
+    const incoming = Array.from(e.target.files ?? []);
+    const existingCount = (item?.photos?.length ?? 0) - deletedPhotoIds.length;
+    const valid = incoming
+      .filter((f) => f.type.startsWith("image/") && f.size <= MAX_SIZE_MB * 1024 * 1024)
+      .slice(0, MAX_FILES - existingCount - newFiles.length);
+    if (!valid.length) return;
+    const combined = [...newFiles, ...valid];
+    setNewFiles(combined);
+    setNewPreviews(combined.map((f) => URL.createObjectURL(f)));
+    if (fileInputRef.current) fileInputRef.current.value = "";
+  };
+
+  const removeNewFile = (index: number) => {
+    URL.revokeObjectURL(newPreviews[index]);
+    setNewFiles((f) => f.filter((_, i) => i !== index));
+    setNewPreviews((p) => p.filter((_, i) => i !== index));
+  };
+
+  const toggleDeleteExisting = (photoId: number) => {
+    setDeletedPhotoIds((ids) =>
+      ids.includes(photoId) ? ids.filter((x) => x !== photoId) : [...ids, photoId]
+    );
+  };
+
+  const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
     setError("");
 
     if (!form.category_id) { setError("Please select a category."); return; }
 
-    updateMutation.mutate({
-      itemName: form.item_name,
-      categoryId: Number(form.category_id),
-      description: form.description,
-    });
+    try {
+      await updateMutation.mutateAsync({
+        itemName: form.item_name,
+        categoryId: Number(form.category_id),
+        description: form.description,
+      });
+    } catch (err) {
+      setError(err instanceof ApiException ? err.message : "Failed to update item.");
+      return;
+    }
+
+    // Delete removed photos
+    for (const photoId of deletedPhotoIds) {
+      try { await itemsService.deletePhoto(Number(id), photoId); } catch { /* ignore */ }
+    }
+
+    // Upload new photos
+    if (newFiles.length > 0) {
+      setUploadingPhotos(true);
+      const existingKept = (item?.photos ?? []).filter((p) => !deletedPhotoIds.includes(p.photo_id)).length;
+      try {
+        for (let i = 0; i < newFiles.length; i++) {
+          await itemsService.uploadPhoto(Number(id), newFiles[i], existingKept + i);
+        }
+      } catch (err) {
+        setError(err instanceof ApiException ? `Saved but some photos failed: ${err.message}` : "Saved but photo upload failed.");
+      } finally {
+        setUploadingPhotos(false);
+      }
+    }
+
+    queryClient.invalidateQueries({ queryKey: ["my-items"] });
+    queryClient.invalidateQueries({ queryKey: ["my-item", id] });
+    navigate("/my-items");
   };
 
   if (itemLoading || catsLoading) {
@@ -103,19 +157,75 @@ const EditItem = () => {
         )}
 
         <form className="space-y-6" onSubmit={handleSubmit}>
-          {/* Current photos preview (read-only) */}
-          {item.photos && item.photos.length > 0 && (
-            <div>
-              <Label className="text-base font-semibold">Current Photos</Label>
-              <div className="mt-2 grid grid-cols-4 gap-2">
-                {item.photos.map((photo) => (
-                  <div key={photo.photo_id} className="aspect-square rounded-lg overflow-hidden border bg-muted">
-                    <img src={photo.photo_url} alt="item photo" className="w-full h-full object-cover" />
+          {/* Photos */}
+          <div>
+            <Label className="text-base font-semibold">
+              Photos <span className="text-muted-foreground font-normal text-sm">(up to {MAX_FILES})</span>
+            </Label>
+
+            <div className="mt-2 grid grid-cols-4 gap-2">
+              {/* Existing photos — click X to mark for deletion */}
+              {item.photos?.map((photo) => {
+                const markedForDelete = deletedPhotoIds.includes(photo.photo_id);
+                return (
+                  <div key={photo.photo_id} className="relative aspect-square rounded-lg overflow-hidden border bg-muted">
+                    <img
+                      src={photo.photo_url}
+                      alt="item photo"
+                      className={`w-full h-full object-cover transition-opacity ${markedForDelete ? "opacity-30" : ""}`}
+                    />
+                    <button
+                      type="button"
+                      onClick={() => toggleDeleteExisting(photo.photo_id)}
+                      className={`absolute top-1 right-1 rounded-full p-0.5 text-white ${markedForDelete ? "bg-muted-foreground/80 hover:bg-muted-foreground" : "bg-black/60 hover:bg-black/80"}`}
+                    >
+                      <X className="h-3 w-3" />
+                    </button>
+                    {markedForDelete && (
+                      <div className="absolute inset-0 flex items-center justify-center">
+                        <span className="text-xs font-medium text-destructive">Remove</span>
+                      </div>
+                    )}
                   </div>
-                ))}
-              </div>
+                );
+              })}
+
+              {/* New photo previews */}
+              {newPreviews.map((src, i) => (
+                <div key={`new-${i}`} className="relative aspect-square rounded-lg overflow-hidden border bg-muted">
+                  <img src={src} alt={`new ${i + 1}`} className="w-full h-full object-cover" />
+                  <button
+                    type="button"
+                    onClick={() => removeNewFile(i)}
+                    className="absolute top-1 right-1 bg-black/60 hover:bg-black/80 rounded-full p-0.5 text-white"
+                  >
+                    <X className="h-3 w-3" />
+                  </button>
+                </div>
+              ))}
+
+              {/* Add more button */}
+              {(item.photos?.length ?? 0) - deletedPhotoIds.length + newFiles.length < MAX_FILES && (
+                <button
+                  type="button"
+                  onClick={() => fileInputRef.current?.click()}
+                  className="aspect-square rounded-lg border-2 border-dashed flex flex-col items-center justify-center gap-1 text-muted-foreground hover:border-primary/50 hover:text-primary transition-colors"
+                >
+                  <ImagePlus className="h-6 w-6" />
+                  <span className="text-xs">Add photo</span>
+                </button>
+              )}
             </div>
-          )}
+
+            <input
+              ref={fileInputRef}
+              type="file"
+              accept="image/*"
+              multiple
+              className="hidden"
+              onChange={handleFileChange}
+            />
+          </div>
 
           <div>
             <Label htmlFor="name">Item Name</Label>
@@ -183,10 +293,10 @@ const EditItem = () => {
             <Button
               type="submit"
               className="flex-1 gradient-primary text-primary-foreground border-0 hover:opacity-90"
-              disabled={updateMutation.isPending}
+              disabled={updateMutation.isPending || uploadingPhotos}
             >
-              {updateMutation.isPending ? (
-                <><Loader2 className="h-4 w-4 mr-2 animate-spin" />Saving…</>
+              {updateMutation.isPending || uploadingPhotos ? (
+                <><Loader2 className="h-4 w-4 mr-2 animate-spin" />{uploadingPhotos ? "Uploading photos…" : "Saving…"}</>
               ) : (
                 "Save Changes"
               )}

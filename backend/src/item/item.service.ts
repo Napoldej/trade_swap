@@ -76,4 +76,9 @@ export class ItemService {
     await this.getItemAndVerifyOwnership(userId, itemId);
     return this.itemRepository.addPhoto(itemId, dto.photoUrl, dto.displayOrder);
   }
+
+  async deletePhoto(userId: number, itemId: number, photoId: number) {
+    await this.getItemAndVerifyOwnership(userId, itemId);
+    return this.itemRepository.deletePhoto(photoId);
+  }
 }

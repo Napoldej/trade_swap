@@ -79,4 +79,10 @@ export class ItemRepository {
       data: { item_id: itemId, photo_url: photoUrl, display_order: displayOrder },
     });
   }
+
+  async deletePhoto(photoId: number) {
+    return this.databaseService.client.itemPhoto.delete({
+      where: { photo_id: photoId },
+    });
+  }
 }

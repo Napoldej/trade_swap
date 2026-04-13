@@ -28,6 +28,10 @@ export const itemsService = {
     return api.delete(`/items/${id}`);
   },
 
+  deletePhoto(itemId: number, photoId: number): Promise<void> {
+    return api.delete(`/items/${itemId}/photos/${photoId}`);
+  },
+
   /** Upload a photo to an item — uses FormData (multipart/form-data) */
   async uploadPhoto(itemId: number, file: File, displayOrder = 0): Promise<unknown> {
     const formData = new FormData();

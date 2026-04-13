@@ -103,4 +103,15 @@ export class ItemController {
 
     return this.itemService.addPhoto(req.user.userId, id, { photoUrl, displayOrder: order });
   }
+
+  @Delete(':id/photos/:photoId')
+  @UseGuards(AuthGuard, RolesGuard)
+  @Roles('TRADER')
+  async deletePhoto(
+    @Request() req: any,
+    @Param('id', ParseIntPipe) id: number,
+    @Param('photoId', ParseIntPipe) photoId: number,
+  ) {
+    return this.itemService.deletePhoto(req.user.userId, id, photoId);
+  }
 }

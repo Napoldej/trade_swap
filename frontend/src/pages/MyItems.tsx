@@ -90,7 +90,7 @@ const MyItems = () => {
                     </Alert>
                   ))}
                   {filtered.map((item) => (
-                    <div key={item.item_id} className="flex items-center gap-4 border rounded-xl p-4 bg-background hover:shadow-sm transition-shadow">
+                    <Link key={item.item_id} to={`/item/${item.item_id}`} className="flex items-center gap-4 border rounded-xl p-4 bg-background hover:shadow-sm transition-shadow">
                       <img
                         src={item.photos?.[0]?.photo_url ?? "/placeholder.svg"}
                         alt={item.item_name}
@@ -108,7 +108,7 @@ const MyItems = () => {
                       </span>
                       {getDisplayStatus(item) !== "TRADED" && (
                         <>
-                          <Link to={`/edit-item/${item.item_id}`}>
+                          <Link to={`/edit-item/${item.item_id}`} onClick={(e) => e.stopPropagation()}>
                             <Button variant="ghost" size="icon">
                               <Pencil className="h-4 w-4" />
                             </Button>
@@ -117,14 +117,14 @@ const MyItems = () => {
                             variant="ghost"
                             size="icon"
                             className="text-destructive hover:text-destructive"
-                            onClick={() => deleteMutation.mutate(item.item_id)}
+                            onClick={(e) => { e.preventDefault(); deleteMutation.mutate(item.item_id); }}
                             disabled={deleteMutation.isPending}
                           >
                             <Trash2 className="h-4 w-4" />
                           </Button>
                         </>
                       )}
-                    </div>
+                    </Link>
                   ))}
                 </div>
               )}
