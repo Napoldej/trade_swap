@@ -14,7 +14,11 @@ const statusStyles: Record<string, string> = {
   PENDING: "bg-warning/10 text-warning border-warning/20",
   APPROVED: "bg-success/10 text-success border-success/20",
   REJECTED: "bg-destructive/10 text-destructive border-destructive/20",
+  TRADED: "bg-blue-500/10 text-blue-500 border-blue-500/20",
 };
+
+const getDisplayStatus = (item: { status: string; is_available: boolean }) =>
+  item.status === "APPROVED" && !item.is_available ? "TRADED" : item.status;
 
 const MyItems = () => {
   const [tab, setTab] = useState("all");
@@ -30,7 +34,13 @@ const MyItems = () => {
     onSuccess: () => queryClient.invalidateQueries({ queryKey: ["my-items"] }),
   });
 
-  const filtered = tab === "all" ? items : items.filter((i) => i.status === tab.toUpperCase());
+  const filtered =
+    tab === "all" ? items
+    : tab === "traded" ? items.filter((i) => i.status === "APPROVED" && !i.is_available)
+    : tab === "approved" ? items.filter((i) => i.status === "APPROVED" && i.is_available)
+    : items.filter((i) => i.status === tab.toUpperCase());
+
+  const tradedCount = items.filter((i) => i.status === "APPROVED" && !i.is_available).length;
   const rejectedItems = filtered.filter((i) => i.status === "REJECTED" && i.rejection_reason);
 
   return (
@@ -57,6 +67,7 @@ const MyItems = () => {
               <TabsTrigger value="pending">Pending</TabsTrigger>
               <TabsTrigger value="approved">Approved</TabsTrigger>
               <TabsTrigger value="rejected">Rejected</TabsTrigger>
+              <TabsTrigger value="traded">Traded ({tradedCount})</TabsTrigger>
             </TabsList>
 
             <TabsContent value={tab} className="mt-4">
@@ -91,24 +102,28 @@ const MyItems = () => {
                           {item.category && <span className="text-xs text-muted-foreground">{item.category.category_name}</span>}
                         </div>
                       </div>
-                      <Badge className={statusStyles[item.status]}>{item.status.toLowerCase()}</Badge>
+                      <Badge className={statusStyles[getDisplayStatus(item)]}>{getDisplayStatus(item).toLowerCase()}</Badge>
                       <span className="text-sm text-muted-foreground hidden md:block">
                         {format(new Date(item.created_at), "MMM d, yyyy")}
                       </span>
-                      <Link to={`/edit-item/${item.item_id}`}>
-                        <Button variant="ghost" size="icon">
-                          <Pencil className="h-4 w-4" />
-                        </Button>
-                      </Link>
-                      <Button
-                        variant="ghost"
-                        size="icon"
-                        className="text-destructive hover:text-destructive"
-                        onClick={() => deleteMutation.mutate(item.item_id)}
-                        disabled={deleteMutation.isPending}
-                      >
-                        <Trash2 className="h-4 w-4" />
-                      </Button>
+                      {getDisplayStatus(item) !== "TRADED" && (
+                        <>
+                          <Link to={`/edit-item/${item.item_id}`}>
+                            <Button variant="ghost" size="icon">
+                              <Pencil className="h-4 w-4" />
+                            </Button>
+                          </Link>
+                          <Button
+                            variant="ghost"
+                            size="icon"
+                            className="text-destructive hover:text-destructive"
+                            onClick={() => deleteMutation.mutate(item.item_id)}
+                            disabled={deleteMutation.isPending}
+                          >
+                            <Trash2 className="h-4 w-4" />
+                          </Button>
+                        </>
+                      )}
                     </div>
                   ))}
                 </div>

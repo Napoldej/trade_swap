@@ -1,7 +1,7 @@
 // ─── Enums ────────────────────────────────────────────────────────────────────
 
 export type Role = 'TRADER' | 'VERIFIER' | 'ADMIN';
-export type ItemStatus = 'PENDING' | 'APPROVED' | 'REJECTED';
+export type ItemStatus = 'PENDING' | 'APPROVED' | 'REJECTED' | 'TRADED';
 export type TradeStatus = 'PENDING' | 'ACCEPTED' | 'REJECTED' | 'AWAITING_VERIFICATION' | 'COMPLETED' | 'CANCELLED';
 
 // ─── User & Auth ──────────────────────────────────────────────────────────────
