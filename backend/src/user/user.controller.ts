@@ -35,7 +35,7 @@ export class UserController {
       const user = await this.userService.get_user_by_username(req.user.username);
       const reponseDTO = plainToInstance(ResponseUserDto, user, { excludeExtraneousValues: true });
       return { message: "User profile fetched successfully", data: reponseDTO };
-    } catch (error) {
+    } catch (error: any) {
       console.error("Error fetching user profile:", error);
       throw new HttpException(error.message, error.status);
     }
@@ -51,12 +51,12 @@ export class UserController {
       console.log("Response DTO:", responseDTO)
       return { message: "User updated successfully", data: responseDTO };
     }
-    catch(error){
+    catch(error: any){
       console.error("Error updating user:", error);
       throw new HttpException('Internal server error: ' + error.message, HttpStatus.INTERNAL_SERVER_ERROR);
-    }      
+    }
   }
-  
+
   @Delete("me")
   @HttpCode(HttpStatus.OK)
   async deleteUser(@Request() req: any) : Promise<{ message: string, data: ResponseUserDto }>{
@@ -65,7 +65,7 @@ export class UserController {
       const responseDTO = plainToInstance(ResponseUserDto, deletedUser, { excludeExtraneousValues: true });
       return { message: "User deleted successfully", data: responseDTO };
     }
-    catch(error){
+    catch(error: any){
       console.error("Error deleting user:", error);
       throw new HttpException('Internal server error: ' + error.message, HttpStatus.INTERNAL_SERVER_ERROR);
     }

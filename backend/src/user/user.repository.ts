@@ -63,7 +63,7 @@ export class UserRepository {
         }
       })
       return existing
-    }catch(error){
+    }catch(error: any){
       console.error("Error fetching user by id:", error)
       throw new ConflictException('Error fetching user by id' + error.message);
     }

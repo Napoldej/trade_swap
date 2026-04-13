@@ -79,7 +79,7 @@ describe('ItemService', () => {
     it('returns all items from repository (only APPROVED+available handled by repo)', async () => {
       mockItemRepository.findAll.mockResolvedValue([mockItem]);
 
-      const result = await service.getAllItems();
+      const result = await service.getAllItems(null);
 
       expect(mockItemRepository.findAll).toHaveBeenCalled();
       expect(result).toHaveLength(1);
