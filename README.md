@@ -45,7 +45,7 @@ TradeSwap uses a **4-Tier Layered Architecture**:
 ```
 ┌─────────────────────────────────────────────────────┐
 │               Presentation Layer                     │
-│         React.js (Vite) — Port 80                   │
+│         React.js (Vite) — Port 8080                   │
 └────────────────────┬────────────────────────────────┘
                      │ HTTP / REST
 ┌────────────────────▼────────────────────────────────┐
@@ -222,7 +222,7 @@ This single command will:
 
 | Service | URL |
 |---------|-----|
-| Frontend | http://localhost |
+| Frontend | http://localhost:8080|
 | Backend API | http://localhost:3000 |
 | PostgreSQL | localhost:5432 |
 
@@ -266,14 +266,22 @@ npm run dev                 # starts on http://localhost:8080
 
 ### Default Accounts
 
-After first run, register an account via the Sign Up page. The first Admin account must be set manually:
+Add these variables to `backend/.env` before seeding:
 
-```sql
--- Connect to the database and promote a user to ADMIN
-UPDATE users SET role = 'ADMIN' WHERE user_name = 'your-username';
+```env
+ADMIN_USER_NAME=admin
+ADMIN_EMAIL=admin@example.com
+ADMIN_PASSWORD=your-secure-password
 ```
 
-Then use the Admin panel to promote other users to Verifier.
+Then run the seed script once:
+
+```bash
+cd backend
+npm run seed
+```
+
+The script is idempotent — if an admin already exists it will skip silently. After that, use the Admin panel to promote other users to Verifier.
 
 ---
 
