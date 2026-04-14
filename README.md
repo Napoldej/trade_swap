@@ -103,6 +103,7 @@ Assigned by an Admin. Reviews content quality and approves trades.
 | Approve or reject item listings | ✅ |
 | View trades awaiting verification | ✅ |
 | Confirm or reject trade completion | ✅ |
+| Approve or reject new trader registrations | ✅ |
 | Create listings or trade items | ❌ |
 | Manage users or platform settings | ❌ |
 
@@ -117,6 +118,8 @@ Full platform control. Does not participate in trading.
 | Manage all item listings (edit, delete) | ✅ |
 | View platform analytics | ✅ |
 | Create and manage categories | ✅ |
+| Approve or reject verifier applications | ✅ |
+| Access all verifier features | ✅ |
 
 ---
 
