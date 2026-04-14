@@ -34,6 +34,21 @@ services:
       db:
         condition: service_healthy
 
+  # ── Prisma Studio ────────────────────────────────────────────────────────────
+  prisma-studio:
+    build: ./backend
+    restart: unless-stopped
+    env_file:
+      - ./backend/.env
+    environment:
+      DATABASE_URL: postgresql://postgres:postgres@db:5432/tradeswap
+    command: sh -c "cd /app/src/infrastructure && npx prisma studio --port 5555 --browser none"
+    ports:
+      - "5555:5555"
+    depends_on:
+      db:
+        condition: service_healthy
+
   # ── React Frontend (Nginx) ───────────────────────────────────────────────────
   frontend:
     build:

@@ -224,6 +224,7 @@ This single command will:
 |---------|-----|
 | Frontend | http://localhost:8080|
 | Backend API | http://localhost:3000 |
+| Prisma Studio | http://localhost:5555 |
 | PostgreSQL | localhost:5432 |
 
 To stop:
