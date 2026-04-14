@@ -1,4 +1,4 @@
-<img width="1767" height="1082" alt="image-2" src="https://github.com/user-attachments/assets/456c70f8-cf08-4d91-ab08-3fca29a148d7" /># TradeSwap
+# TradeSwap
 
 A web-based item trading platform where users can swap items with each other — no money involved. All listings go through a human verification process before going live to ensure quality and prevent fraud.
 
