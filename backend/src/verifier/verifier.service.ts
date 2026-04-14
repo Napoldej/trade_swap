@@ -83,6 +83,34 @@ export class VerifierService {
     return result;
   }
 
+  // ── Trader Account Approval ──────────────────────────────────────────────────
+
+  async getPendingTraders() {
+    return this.databaseService.client.user.findMany({
+      where: { role: 'TRADER', verified: false },
+      select: { user_id: true, user_name: true, first_name: true, last_name: true, email: true, created_at: true, verified: true, role: true },
+      orderBy: { created_at: 'asc' },
+    });
+  }
+
+  async approveTrader(userId: number) {
+    const user = await this.databaseService.client.user.findUnique({ where: { user_id: userId } });
+    if (!user) throw new NotFoundException('User not found');
+    if (user.role !== 'TRADER') throw new BadRequestException('User is not a trader');
+    return this.databaseService.client.user.update({
+      where: { user_id: userId },
+      data: { verified: true },
+      select: { user_id: true, user_name: true, verified: true },
+    });
+  }
+
+  async rejectTrader(userId: number) {
+    const user = await this.databaseService.client.user.findUnique({ where: { user_id: userId } });
+    if (!user) throw new NotFoundException('User not found');
+    if (user.role !== 'TRADER') throw new BadRequestException('User is not a trader');
+    await this.databaseService.client.user.delete({ where: { user_id: userId } });
+  }
+
   async rejectTradeVerification(tradeId: number, userId: number, reason: string) {
     const trade = await this.findTradeAwaitingOrThrow(tradeId);
     const result = await this.verifierRepository.rejectTradeVerification(tradeId, userId, reason);

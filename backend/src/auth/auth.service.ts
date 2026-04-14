@@ -42,7 +42,7 @@ export class AuthService {
       last_name: dto.last_name,
       email: dto.email,
       role,
-      verified: !isVerifier,
+      verified: false,
     });
 
     if (!user) {
@@ -88,7 +88,7 @@ export class AuthService {
       trader_id = trader?.trader_id ?? null;
     }
 
-    return this.buildTokens(user.user_id, user.user_name, user.role, trader_id);
+    return this.buildTokens(user.user_id, user.user_name, user.role, trader_id, user.verified);
   }
 
   private async buildTokens(
@@ -96,8 +96,9 @@ export class AuthService {
     userName: string,
     role: string,
     trader_id: number | null,
+    verified = false,
   ): Promise<AuthResult> {
-    const payload = { sub: userId, username: userName, role };
+    const payload = { sub: userId, username: userName, role, verified };
 
     const [access_token, refresh_token] = await Promise.all([
       this.jwtService.signAsync(payload),

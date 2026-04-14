@@ -25,6 +25,7 @@ import VerifierDashboard from "./pages/verifier/VerifierDashboard";
 import VerifyItem from "./pages/verifier/VerifyItem";
 import VerifierTradeList from "./pages/verifier/VerifierTradeList";
 import VerifierTradeReview from "./pages/verifier/VerifierTradeReview";
+import VerifierTraderApproval from "./pages/verifier/VerifierTraderApproval";
 import AdminDashboard from "./pages/admin/AdminDashboard";
 import UserManagement from "./pages/admin/UserManagement";
 import AdminAnalytics from "./pages/admin/AdminAnalytics";
@@ -72,6 +73,7 @@ const App = () => (
           <Route path="/verifier/trades" element={<VerifierTradeList />} />
           <Route path="/verifier/trades/:id" element={<VerifierTradeReview />} />
           <Route path="/verifier/pending" element={<VerifierDashboard />} />
+          <Route path="/verifier/traders" element={<VerifierTraderApproval />} />
           <Route path="/admin" element={<AdminDashboard />} />
           <Route path="/admin/users" element={<UserManagement />} />
           <Route path="/admin/analytics" element={<AdminAnalytics />} />

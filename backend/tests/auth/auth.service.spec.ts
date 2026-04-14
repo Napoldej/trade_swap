@@ -67,7 +67,7 @@ describe('AuthService', () => {
       });
 
       expect(mockUserService.create_user).toHaveBeenCalledWith(
-        expect.objectContaining({ role: 'TRADER', verified: true }),
+        expect.objectContaining({ role: 'TRADER', verified: false }),
       );
       expect(mockDatabaseService.client.trader.create).toHaveBeenCalled();
       expect(result).toHaveProperty('access_token');
@@ -118,7 +118,7 @@ describe('AuthService', () => {
       });
 
       expect(mockUserService.create_user).toHaveBeenCalledWith(
-        expect.objectContaining({ role: 'TRADER', verified: true }),
+        expect.objectContaining({ role: 'TRADER', verified: false }),
       );
     });
 
