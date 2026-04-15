@@ -40,7 +40,7 @@ List Item → Verification → Browse → Propose Trade → Both Confirm → Ver
 
 ## System Architecture
 
-TradeSwap uses a **4-Tier Layered Architecture**:
+TradeSwap uses a **Modular Monolith with 4-Tier Layered Architecture**:
 
 ```
 ┌─────────────────────────────────────────────────────┐
@@ -164,7 +164,7 @@ Full platform control. Does not participate in trading.
 ### 1. Clone the repository
 
 ```bash
-git clone <repository-url>
+git clone https://github.com/Napoldej/trade_swap.git
 cd trade_swap
 ```
 
@@ -367,4 +367,4 @@ The script is idempotent — if an admin already exists it will skip silently. A
 
 ---
 
-> Add your screenshots to `docs/screenshots/` and update the paths above.
+
