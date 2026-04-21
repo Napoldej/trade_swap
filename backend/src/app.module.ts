@@ -11,8 +11,7 @@ import { VerifierModule } from './verifier/verifier.module';
 import { AdminModule } from './admin/admin.module';
 import { CategoryModule } from './category/category.module';
 import { NotificationModule } from './notification/notification.module';
-import { AppController } from './app.controller';
-import { AppService } from './app.service';
+
 
 @Module({
   imports: [
@@ -28,8 +27,6 @@ import { AppService } from './app.service';
     AdminModule,
     CategoryModule,
     NotificationModule,
-  ],
-  controllers: [AppController],
-  providers: [AppService],
+  ]
 })
 export class AppModule {}
