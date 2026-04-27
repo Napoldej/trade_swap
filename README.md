@@ -167,20 +167,33 @@ cd trade_swap
 
 ### 2. Configure environment variables
 
+Create a `.env` file in the **project root** (same folder as `docker-compose.yml`):
+
 ```bash
 cp .env.example .env
 ```
 
-Open `.env` and fill in your AWS S3 credentials:
+Open `.env` and fill in all values:
 
 ```env
+# Database — uses the Docker service name "db" as the host
+DATABASE_URL=postgresql://postgres:postgres@db:5432/tradeswap
+
+# AWS S3 — required for item photo uploads
 AWS_BUCKET_NAME=your-s3-bucket-name
 AWS_BUCKET_REGION=your-region          # e.g. ap-southeast-2
 AWS_ACCESS_KEY_ID=your-access-key-id
 AWS_SECRET_ACCESS_KEY=your-secret-access-key
+
+# Seeded admin account credentials
+ADMIN_USER_NAME=admin
+ADMIN_EMAIL=admin@example.com
+ADMIN_PASSWORD=change-me
 ```
 
-> **Note:** The database connection is handled automatically by Docker. You do not need to set `DATABASE_URL`.
+> **Important:** The `.env` file must be in the **project root**, not inside `backend/`. Docker Compose reads it from the same directory as `docker-compose.yml`.
+>
+> If you run the backend locally (without Docker), use `localhost:5432` in `DATABASE_URL` instead of `db:5432`.
 
 ### 3. AWS S3 Bucket Setup
 
@@ -245,8 +258,10 @@ docker compose down -v
 **Backend:**
 ```bash
 cd backend
-cp .env.example .env        # add DATABASE_URL and AWS keys
 npm install
+# Create backend/.env with DATABASE_URL pointing to localhost
+# DATABASE_URL=postgresql://postgres:postgres@localhost:5432/tradeswap
+# Plus AWS keys and ADMIN_* values (see root .env.example)
 
 cd src/infrastructure
 npx prisma migrate dev      # run migrations

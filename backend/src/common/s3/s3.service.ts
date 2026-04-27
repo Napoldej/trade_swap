@@ -5,20 +5,31 @@ import * as path from 'path';
 
 @Injectable()
 export class S3Service {
-  private readonly client: S3Client;
+  private _client: S3Client | null = null;
   private readonly bucket: string;
   private readonly region: string;
 
   constructor() {
-    this.bucket = process.env.AWS_BUCKET_NAME!;
-    this.region = process.env.AWS_BUCKET_REGION!;
-    this.client = new S3Client({
-      region: this.region,
-      credentials: {
-        accessKeyId: process.env.AWS_ACCESS_KEY_ID!,
-        secretAccessKey: process.env.AWS_SECRET_ACCESS_KEY!,
-      },
-    });
+    this.bucket = process.env.AWS_BUCKET_NAME ?? '';
+    this.region = process.env.AWS_BUCKET_REGION ?? '';
+  }
+
+  private get client(): S3Client {
+    if (!this._client) {
+      if (!this.region) {
+        throw new InternalServerErrorException(
+          'S3 is not configured: AWS_BUCKET_REGION is missing',
+        );
+      }
+      this._client = new S3Client({
+        region: this.region,
+        credentials: {
+          accessKeyId: process.env.AWS_ACCESS_KEY_ID!,
+          secretAccessKey: process.env.AWS_SECRET_ACCESS_KEY!,
+        },
+      });
+    }
+    return this._client;
   }
 
   async uploadFile(file: Express.Multer.File, folder = 'items'): Promise<string> {
