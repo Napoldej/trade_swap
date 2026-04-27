@@ -1,4 +1,4 @@
-import { ClipboardCheck, ShieldCheck } from "lucide-react";
+import { ClipboardCheck, ShieldCheck, Users } from "lucide-react";
 import { Link, useLocation } from "react-router-dom";
 import { cn } from "@/lib/utils";
 import { useQuery } from "@tanstack/react-query";
@@ -14,9 +14,16 @@ const VerifierSidebar = () => {
     refetchInterval: 30000,
   });
 
+  const { data: pendingTraders = [] } = useQuery({
+    queryKey: ["verifier-pending-traders"],
+    queryFn: verifierService.getPendingTraders,
+    refetchInterval: 30000,
+  });
+
   const navItems = [
     { title: "Pending Items", url: "/verifier/pending", icon: ClipboardCheck },
     { title: "Trade Verifications", url: "/verifier/trades", icon: ShieldCheck, count: pendingTrades.length },
+    { title: "Pending Traders", url: "/verifier/traders", icon: Users, count: pendingTraders.length },
   ];
 
   return (

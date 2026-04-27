@@ -40,12 +40,12 @@ List Item → Verification → Browse → Propose Trade → Both Confirm → Ver
 
 ## System Architecture
 
-TradeSwap uses a **4-Tier Layered Architecture**:
+TradeSwap uses a **Modular Monolith with 4-Tier Layered Architecture**:
 
 ```
 ┌─────────────────────────────────────────────────────┐
 │               Presentation Layer                     │
-│         React.js (Vite) — Port 80                   │
+│         React.js (Vite) — Port 8080                   │
 └────────────────────┬────────────────────────────────┘
                      │ HTTP / REST
 ┌────────────────────▼────────────────────────────────┐
@@ -103,6 +103,7 @@ Assigned by an Admin. Reviews content quality and approves trades.
 | Approve or reject item listings | ✅ |
 | View trades awaiting verification | ✅ |
 | Confirm or reject trade completion | ✅ |
+| Approve or reject new trader registrations | ✅ |
 | Create listings or trade items | ❌ |
 | Manage users or platform settings | ❌ |
 
@@ -117,6 +118,8 @@ Full platform control. Does not participate in trading.
 | Manage all item listings (edit, delete) | ✅ |
 | View platform analytics | ✅ |
 | Create and manage categories | ✅ |
+| Approve or reject verifier applications | ✅ |
+| Access all verifier features | ✅ |
 
 ---
 
@@ -161,7 +164,7 @@ Full platform control. Does not participate in trading.
 ### 1. Clone the repository
 
 ```bash
-git clone <repository-url>
+git clone https://github.com/Napoldej/trade_swap.git
 cd trade_swap
 ```
 
@@ -235,8 +238,9 @@ This single command will:
 
 | Service | URL |
 |---------|-----|
-| Frontend | http://localhost |
+| Frontend | http://localhost:8080|
 | Backend API | http://localhost:3000 |
+| Prisma Studio | http://localhost:5555 |
 | PostgreSQL | localhost:5432 |
 
 To stop:
@@ -281,55 +285,101 @@ npm run dev                 # starts on http://localhost:8080
 
 ### Default Accounts
 
-After first run, register an account via the Sign Up page. The first Admin account must be set manually:
+Before seeding, make sure:
 
-```sql
--- Connect to the database and promote a user to ADMIN
-UPDATE users SET role = 'ADMIN' WHERE user_name = 'your-username';
-```
+1. **PostgreSQL is running** (locally or via Docker)
+2. **`backend/.env` exists** — copy from `.env.example` and fill in your values:
+   ```env
+   DATABASE_URL=postgresql://user:password@localhost:5432/tradeswap
+   ADMIN_USER_NAME=admin
+   ADMIN_EMAIL=admin@example.com
+   ADMIN_PASSWORD=your-secure-password
+   ```
+3. **Dependencies are installed:**
+   ```bash
+   cd backend && npm install
+   ```
+4. **Database is migrated** (tables must exist before seeding):
+   ```bash
+   npx prisma migrate deploy
+   ```
+5. **Run the seed script once:**
+   ```bash
+   npm run seed
+   ```
 
-Then use the Admin panel to promote other users to Verifier.
+The script is idempotent — if an admin already exists it will skip silently. After that, use the Admin panel to promote other users to Verifier.
 
 ---
 
 ## Screenshots
 
 ### Landing Page
-![Landing Page](docs/screenshots/landing.png)
+<img width="1796" height="1036" alt="image" src="https://github.com/user-attachments/assets/e93733ce-9bbe-4dbd-96d2-49190f393a7b" />
 
 ### Browse Items
-![Browse Items](docs/screenshots/browse.png)
+<img width="1783" height="1089" alt="image-3" src="https://github.com/user-attachments/assets/b90683da-0087-42db-95cf-232fdee73aff" />
+
+### Profile Management
+
+#### User Profile
+<img width="1797" height="889" alt="image-13" src="https://github.com/user-attachments/assets/bde82ec7-de05-438e-9af8-a4f84c272029" />
+
+#### Edit Profile
+<img width="1799" height="1087" alt="image-14" src="https://github.com/user-attachments/assets/9748524e-10bb-48cc-b4ba-f7795b4409ad" />
+
 
 ### Item Detail
-![Item Detail](docs/screenshots/item-detail.png)
+<img width="1798" height="1079" alt="image-4" src="https://github.com/user-attachments/assets/a961143d-7c2d-4fad-9ec9-e36d7a96c36c" />
+
 
 ### Create Item Listing
-![Create Item](docs/screenshots/create-item.png)
+<img width="1799" height="1052" alt="image-1" src="https://github.com/user-attachments/assets/d4d73400-d071-4859-b74f-1b86f15549fa" />
+
 
 ### Trade Detail & Progress Stepper
-![Trade Detail](docs/screenshots/trade-detail.png)
+#### Send Trade Proposal
+<img width="1800" height="1069" alt="image-5" src="https://github.com/user-attachments/assets/c7e9c677-23cb-4dc6-b6bd-819ab1355499" />
+
+#### Trade Detail
+<img width="1800" height="1079" alt="image-6" src="https://github.com/user-attachments/assets/68bcf9df-1f1b-4d8c-a8f1-2b7f76a0cc51" />
+
+#### Receiver get proposal
+<img width="1799" height="1089" alt="image-8" src="https://github.com/user-attachments/assets/462e528a-fe91-4f71-b9fa-a7c392842e10" />
+
+#### Await verifier to approve trade
+<img width="1773" height="1076" alt="image-9" src="https://github.com/user-attachments/assets/3d60f034-8c4d-457d-899b-4a9d7748c202" />
+
+#### Complete Trade
+<img width="1800" height="1083" alt="image-11" src="https://github.com/user-attachments/assets/f0c11608-4321-4eb0-a83f-ef77aa2ee9ac" />
+
 
 ### My Trades
-![My Trades](docs/screenshots/my-trades.png)
+<img width="1800" height="1088" alt="image-7" src="https://github.com/user-attachments/assets/172e850c-06a2-47e9-af11-83af6af520d1" />
 
 ### Chat
-![Chat](docs/screenshots/chat.png)
+<img width="1799" height="1088" alt="image-15" src="https://github.com/user-attachments/assets/497085eb-da10-4951-ace7-fea77e33b014" />
+
 
 ### Verifier Dashboard — Pending Items
-![Verifier Dashboard](docs/screenshots/verifier-dashboard.png)
+<img width="1767" height="1082" alt="image-2" src="https://github.com/user-attachments/assets/00921bc5-04b6-4105-a748-33748d0d218e" />
 
 ### Verifier Trade Review
-![Verifier Trade Review](docs/screenshots/verifier-trade-review.png)
+<img width="1764" height="1088" alt="image-10" src="https://github.com/user-attachments/assets/8a68bb2a-7650-42d5-8c48-02f352e525b4" />
+
 
 ### Admin — User Management
-![Admin Users](docs/screenshots/admin-users.png)
+<img width="1800" height="1091" alt="image-16" src="https://github.com/user-attachments/assets/9e414b3d-3fb7-45c3-a0bd-1b8c85ddc137" />
+
 
 ### Admin — Item Management
-![Admin Items](docs/screenshots/admin-items.png)
+<img width="1800" height="1090" alt="image-17" src="https://github.com/user-attachments/assets/86e3669f-0729-4919-aa3f-f248df899ce3" />
+
 
 ### Admin — Analytics
-![Admin Analytics](docs/screenshots/admin-analytics.png)
+<img width="1800" height="1089" alt="image-18" src="https://github.com/user-attachments/assets/0bf7ac3a-0675-4d78-9d65-74c8dbe96f01" />
+
 
 ---
 
-> Add your screenshots to `docs/screenshots/` and update the paths above.
+

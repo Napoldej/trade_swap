@@ -21,17 +21,30 @@ services:
   backend:
     build: ./backend
     restart: unless-stopped
+    env_file:
+      - ./backend/.env
     environment:
+      # These override backend/.env so Docker networking works correctly
       DATABASE_URL: postgresql://postgres:postgres@db:5432/tradeswap
-      FRONTEND_URL: http://localhost
+      FRONTEND_URL: http://localhost:8080
       PORT: 3000
-      # AWS S3 — copy .env.example to .env and fill in your values
-      AWS_BUCKET_NAME: ${AWS_BUCKET_NAME:-}
-      AWS_BUCKET_REGION: ${AWS_BUCKET_REGION:-}
-      AWS_ACCESS_KEY_ID: ${AWS_ACCESS_KEY_ID:-}
-      AWS_SECRET_ACCESS_KEY: ${AWS_SECRET_ACCESS_KEY:-}
     ports:
       - "3000:3000"
+    depends_on:
+      db:
+        condition: service_healthy
+
+  # ── Prisma Studio ────────────────────────────────────────────────────────────
+  prisma-studio:
+    build: ./backend
+    restart: unless-stopped
+    env_file:
+      - ./backend/.env
+    environment:
+      DATABASE_URL: postgresql://postgres:postgres@db:5432/tradeswap
+    command: sh -c "cd /app/src/infrastructure && npx prisma studio --port 5555 --browser none"
+    ports:
+      - "5555:5555"
     depends_on:
       db:
         condition: service_healthy
@@ -45,7 +58,7 @@ services:
         VITE_API_URL: http://localhost:3000
     restart: unless-stopped
     ports:
-      - "80:80"
+      - "8080:80"
     depends_on:
       - backend
 

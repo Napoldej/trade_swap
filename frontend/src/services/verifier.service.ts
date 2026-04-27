@@ -26,6 +26,19 @@ export const verifierService = {
     return api.delete(`/verifier/items/${id}`);
   },
 
+  // Trader account approval
+  getPendingTraders(): Promise<import('@/types/api').User[]> {
+    return api.get('/verifier/traders/pending');
+  },
+
+  approveTrader(id: number): Promise<void> {
+    return api.patch(`/verifier/traders/${id}/approve`);
+  },
+
+  rejectTrader(id: number): Promise<void> {
+    return api.delete(`/verifier/traders/${id}/reject`);
+  },
+
   // Trade verification
   getPendingTrades(): Promise<Trade[]> {
     return api.get('/verifier/trades/pending');

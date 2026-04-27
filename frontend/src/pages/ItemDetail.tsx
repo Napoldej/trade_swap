@@ -162,7 +162,15 @@ const ItemDetail = () => {
             <h1 className="text-3xl font-bold mb-3">{item.item_name}</h1>
             <div className="flex gap-2 mb-4 flex-wrap">
               {item.category && <Badge variant="secondary">{item.category.category_name}</Badge>}
-              <Badge className="bg-success/10 text-success border-success/20"><Shield className="h-3 w-3 mr-1" />Approved</Badge>
+              {item.status === "APPROVED" && (
+                <Badge className="bg-success/10 text-success border-success/20"><Shield className="h-3 w-3 mr-1" />Approved</Badge>
+              )}
+              {item.status === "PENDING" && (
+                <Badge className="bg-warning/10 text-warning border-warning/20">Pending Review</Badge>
+              )}
+              {item.status === "REJECTED" && (
+                <Badge className="bg-destructive/10 text-destructive border-destructive/20">Rejected</Badge>
+              )}
               {s === "offered_to_you" && (
                 <Badge className="bg-orange-500 text-white">Offered to You</Badge>
               )}

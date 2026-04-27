@@ -71,6 +71,24 @@ export class VerifierController {
     await this.verifierService.removeItem(id);
   }
 
+  // ── Trader Account Approval ───────────────────────────────────────────────────
+
+  @Get('traders/pending')
+  getPendingTraders() {
+    return this.verifierService.getPendingTraders();
+  }
+
+  @Patch('traders/:id/approve')
+  approveTrader(@Param('id', ParseIntPipe) id: number) {
+    return this.verifierService.approveTrader(id);
+  }
+
+  @Delete('traders/:id/reject')
+  @HttpCode(HttpStatus.NO_CONTENT)
+  async rejectTrader(@Param('id', ParseIntPipe) id: number) {
+    await this.verifierService.rejectTrader(id);
+  }
+
   // ── Trade Verification ────────────────────────────────────────────────────────
 
   @Get('trades/pending')
